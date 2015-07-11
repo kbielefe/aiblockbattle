@@ -1,0 +1,5 @@
+object AiBlockBattle {
+  def main(args: Array[String]) {
+    println("Hello, world!")
+  }
+}
