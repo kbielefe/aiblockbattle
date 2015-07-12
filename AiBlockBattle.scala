@@ -9,6 +9,8 @@ object AiBlockBattle {
   // Slide moves
 
   type GameState = Map[String, String]
+  type Field = Array[Array[Int]]
+  type Block = (Int, Int)
 
   def processLine(state: GameState, line: String): GameState = {
     val fields = line split ' '
@@ -23,34 +25,57 @@ object AiBlockBattle {
 
   def outputMove(state: GameState, time: Int): Unit = {
     val my_bot = state("your_bot")
-    val my_field = getField(state, my_bot)
+    val my_field = getField(state(my_bot + "/field"))
+    val this_piece_type = state("game/this_piece_type")
+    val boundaries = getBoundaries(my_field)
+    println(boundaries)
   }
 
-  def getField(state: GameState, bot: String): Array[Array[Int]] = {
-    state(bot + "/field") split ';' map {_ split ',' map {_.toInt}}
+  def getField(field: String): Field = {
+     field split ';' map {_ split ',' map {_.toInt}}
   }
 
-  def printField(field: Array[Array[Int]]): Unit = {
-    field map {_ mkString ","} foreach println
+  def isEmpty(field: Field)(block: Block): Boolean = {
+    val (row, col) = block
+    val cell = field(row)(col)
+    cell == 0 || cell == 1
+  }
+
+  def getBoundaries(field: Field): IndexedSeq[Block] = {
+    def isBoundary(block: Block): Boolean = {
+      val (row, col) = block
+      val bottom = (row+1, col)
+      !isEmpty(field)(bottom) && isEmpty(field)(block)
+    }
+
+    val height = field.size - 1
+    val width  = field(0).size
+
+    val blocks = for (row <- 0 until height; col <- 0 until width) yield (row, col)
+    val bottomBlocks = for (col <- 0 until width) yield (height, col)
+    (blocks filter isBoundary) ++ (bottomBlocks filter isEmpty(field))
+  }
+
+  def printField(field: Field): Unit = {
+    field map {_ mkString ""} foreach println
   }
 
   def printState(state: GameState): Unit = {
-    def printField(field: (String, String)): Unit = {
-      val (a, b) = field
+    def printSetting(setting: (String, String)): Unit = {
+      val (a, b) = setting
       if (a endsWith "/field") {
         println(a + " -> ")
-        b split ';' map {"  " + _} foreach println
+        printField(getField(b))
       } else {
         println(a + " -> " + b)
       }
     }
 
-    state foreach printField
+    state foreach printSetting
   }
 
   def main(args: Array[String]) {
     val lines = io.Source.stdin.getLines
     val state = lines.foldLeft(Map[String, String]())(processLine)
-    printState(state)
   }
 }
