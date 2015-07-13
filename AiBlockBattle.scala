@@ -1,13 +1,4 @@
 object AiBlockBattle {
-  // Map from character to set of rotations
-  // Map from rotation to receptor width and height
-  //   either 4x0 3x0 2x0 1x0 2x2 3x1 2x1 
-  // Map from rotation to map from receptor to offset
-  //
-  // Settings map from String to String
-  // Drop moves
-  // Slide moves
-
   type GameState = Map[String, String]
   type Field = Array[Array[Int]]
   type Block = (Int, Int)
