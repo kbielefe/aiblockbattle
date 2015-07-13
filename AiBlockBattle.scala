@@ -12,6 +12,15 @@ object AiBlockBattle {
   type Field = Array[Array[Int]]
   type Block = (Int, Int)
 
+  val pieces = Map(
+    'I' -> "    XXXX        ",
+    'J' -> "X  XXX   ",
+    'L' -> "  XXXX   ",
+    'O' -> "XXXX",
+    'S' -> "XX  XX   ",
+    'T' -> " X XXX   ",
+    'Z' -> " XXXX    ")
+
   def processLine(state: GameState, line: String): GameState = {
     val fields = line split ' '
 
@@ -28,7 +37,6 @@ object AiBlockBattle {
     val my_field = getField(state(my_bot + "/field"))
     val this_piece_type = state("game/this_piece_type")
     val boundaries = getBoundaries(my_field)
-    println(boundaries)
   }
 
   def getField(field: String): Field = {
@@ -74,7 +82,45 @@ object AiBlockBattle {
     state foreach printSetting
   }
 
+  def rotateRight(piece: IndexedSeq[Block], width: Int): IndexedSeq[Block] = {
+     piece map {case (row, col) => (col, width - row - 1)}
+  }
+
+  def rotateLeft(piece: IndexedSeq[Block], width: Int): IndexedSeq[Block] = {
+     piece map {case (row, col) => (width - col - 1, row)}
+  }
+
+  def getPieceBoundaries(piece: IndexedSeq[Block]): Iterable[Block] = {
+    val grouped = piece groupBy {_._2}
+    grouped.values map {_ maxBy {_._1}}
+  }
+
+  def normalizePiece(piece: IndexedSeq[Block], boundary: Block): Set[Block] = {
+    val (row, col) = boundary
+    val result = piece map {case (pieceRow, pieceCol) => (pieceRow - row, pieceCol - col)}
+    result.toSet
+  }
+
+  def getNormalizedPieces(piece: IndexedSeq[Block]): Set[Set[Block]] = {
+    val boundaries = getPieceBoundaries(piece)
+    val result = boundaries map {normalizePiece(piece, _)}
+    result.toSet
+  }
+
+  def getPieceSet(piece: String): Set[Set[Block]] = {
+    val pieceBool = piece map {_ == 'X'}
+    val indexes = pieceBool.zipWithIndex filter {_._1} map {_._2}
+    val width = math.floor(math.sqrt(pieceBool.size)).toInt
+    val result = indexes map {index => (index / width, index % width)}
+    val rotations = Set(result, rotateRight(result, width), rotateLeft(result, width), rotateLeft(rotateLeft(result, width), width))
+    rotations flatMap getNormalizedPieces
+  }
+
+  val pieceSets = pieces mapValues getPieceSet
+
   def main(args: Array[String]) {
+    println(pieceSets)
+
     val lines = io.Source.stdin.getLines
     val state = lines.foldLeft(Map[String, String]())(processLine)
   }
