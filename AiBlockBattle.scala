@@ -26,8 +26,21 @@ object AiBlockBattle {
   def outputMove(state: GameState, time: Int): Unit = {
     val my_bot = state("your_bot")
     val my_field = getField(state(my_bot + "/field"))
-    val this_piece_type = state("game/this_piece_type")
+    val this_piece_type = state("game/this_piece_type")(0)
+    val width = state("field_width").toInt
     val boundaries = getBoundaries(my_field)
+    val potentialMoves = for (i <- pieceSets(this_piece_type); j <- boundaries) yield getMoves(i, j)
+    val validMoves = potentialMoves filter moveValid(my_field, width)_
+  }
+
+  def getMoves(piece: Set[Block], boundary: Block): Set[Block] = {
+    val (row, col) = boundary
+    val result = piece map {case (pieceRow, pieceCol) => (pieceRow + row, pieceCol + col)}
+    result
+  }
+
+  def moveValid(field: Field, width: Int)(move: Set[Block]): Boolean = {
+    move forall {case (row, col) => row >= 0 && col >= 0 && col < width && isEmpty(field)((row, col))}
   }
 
   def getField(field: String): Field = {
@@ -110,8 +123,6 @@ object AiBlockBattle {
   val pieceSets = pieces mapValues getPieceSet
 
   def main(args: Array[String]) {
-    println(pieceSets)
-
     val lines = io.Source.stdin.getLines
     val state = lines.foldLeft(Map[String, String]())(processLine)
   }
