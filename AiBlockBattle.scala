@@ -1,6 +1,6 @@
 object AiBlockBattle {
   type GameState = Map[String, String]
-  type Field = Array[Array[Int]]
+  type Field = Array[Array[Boolean]]
   type Block = (Int, Int)
 
   val pieces = Map(
@@ -40,24 +40,17 @@ object AiBlockBattle {
   }
 
   def moveValid(field: Field, width: Int)(move: Set[Block]): Boolean = {
-    move forall {case (row, col) => row >= 0 && col >= 0 && col < width && isEmpty(field)((row, col))}
+    move forall {case (row, col) => row >= 0 && col >= 0 && col < width && !field(row)(col)}
   }
 
   def getField(field: String): Field = {
-     field split ';' map {_ split ',' map {_.toInt}}
-  }
-
-  def isEmpty(field: Field)(block: Block): Boolean = {
-    val (row, col) = block
-    val cell = field(row)(col)
-    cell == 0 || cell == 1
+    field split ';' map {_ split ',' map {cell => cell != "3" && cell != "4"}}
   }
 
   def getBoundaries(field: Field): IndexedSeq[Block] = {
     def isBoundary(block: Block): Boolean = {
       val (row, col) = block
-      val bottom = (row+1, col)
-      !isEmpty(field)(bottom) && isEmpty(field)(block)
+      !field(row+1)(col) && field(row)(col)
     }
 
     val height = field.size - 1
@@ -65,7 +58,7 @@ object AiBlockBattle {
 
     val blocks = for (row <- 0 until height; col <- 0 until width) yield (row, col)
     val bottomBlocks = for (col <- 0 until width) yield (height, col)
-    (blocks filter isBoundary) ++ (bottomBlocks filter isEmpty(field))
+    (blocks filter isBoundary) ++ (bottomBlocks filter {case (row, col) => !field(row)(col)})
   }
 
   def printField(field: Field): Unit = {
