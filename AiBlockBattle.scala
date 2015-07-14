@@ -1,3 +1,67 @@
+class aStar(start: (Int, Int), field: Array[Array[Boolean]]) {
+  import scala.annotation.tailrec
+  import math.sqrt
+  type Cell = (Int, Int)
+
+  def heuristic(goal: Cell)(position: Cell): Double = {
+    val (x, y) = position
+    val (goalX, goalY) = goal
+    val dx = (x - goalX).toDouble
+    val dy = (y - goalY).toDouble
+
+    sqrt(dx * dx + dy * dy)
+  }
+
+  def reconstructPath(start: Cell, goal: Cell, cameFrom: Map[Cell, Cell]): Cell = {
+    @tailrec
+    def helper(current: Cell): Cell = {
+      if (cameFrom(current) == start)
+        return current
+      helper(cameFrom(current))
+    }
+
+    helper(goal)
+  }
+
+  def aStar(goal: Cell, obstacles: Set[Cell]) : Cell = {
+    @tailrec
+    def helper(closed: Set[Cell], open: Set[Cell], cameFrom: Map[Cell, Cell],
+      g: Map[Cell, Double], f: Map[Cell, Double]): Cell = {
+
+      val current = open minBy {f(_)}
+      if (current == goal)
+        return reconstructPath(start, goal, cameFrom)
+      val tentativeG = g(current) + 1.0
+
+      val neighbors = getNeighbors(current) -- closed -- obstacles
+      val notOpenNeighbors = neighbors -- open
+      val betterNeighbors = (neighbors & open) filter {tentativeG < g(_)}
+      val newNeighbors = notOpenNeighbors ++ betterNeighbors
+
+      val newCameFrom = cameFrom ++ (newNeighbors map {(_, current)})
+      val newG = g ++ (newNeighbors map {(_, tentativeG)})
+      val newF = f ++ (newNeighbors map {neighbor => (neighbor, tentativeG + heuristic(goal)(neighbor))})
+
+      val newClosed = closed + current
+      val newOpen = open ++ newNeighbors - current
+
+      helper(newClosed, newOpen, newCameFrom, newG, newF)
+    }
+
+    val closed = Set[Cell]()
+    val open = Set(start)
+    val cameFrom = Map[Cell, Cell]()
+    val g = Map[Cell, Double](start -> 0.0)
+    val f = Map[Cell, Double](start -> heuristic(goal)(start))
+    helper(closed, open, cameFrom, g, f)
+  }
+
+  def getNeighbors(position: Cell): Set[Cell] = {
+    val (x, y) = position
+    Set((x-1, y-1), (x, y-1), (x+1, y-1), (x-1, y), (x+1, y), (x-1, y+1), (x, y+1), (x+1, y+1))
+  }
+}
+
 object AiBlockBattle {
   type GameState = Map[String, String]
   type Field = Array[Array[Boolean]]
