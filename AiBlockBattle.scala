@@ -52,6 +52,53 @@ class AStar[Position](
   }
 }
 
+class Piece(string: String) {
+  type Block = (Int, Int)
+  type Position = (Block, Int)
+
+  val width = math.floor(math.sqrt(string.size)).toInt
+
+  val blocks = {
+    val indexes = string.zipWithIndex filter {_._1 == 'X'} map {_._2}
+    val indexSeq = indexes map {index => (index / width, index % width)}
+    indexSeq.toSet
+  }
+
+  def getPositionsFromBoundaries(boundaries: Iterable[Block]): Iterable[Position] = {
+    boundaries flatMap getPositionsFromBoundary
+  }
+
+  def getPositionsFromBoundary(boundary: Block): Set[Position] = {
+    val angles = Set(0, -90, 90, 180)
+    val offset = angles flatMap getBoundariesFromAngle
+    offset map {case ((row, col), angle) => ((boundary._1 - row, boundary._2 - col), angle)}
+  }
+
+  def getBlocksFromAngle(angle: Int): Set[Block] = angle match {
+    case -90 => blocks map rotateLeft
+    case  90 => blocks map rotateRight
+    case 180 => blocks map flip
+    case   _ => blocks
+  }
+
+  def getBlocksFromPosition(position: Position): Set[Block] = {
+    val ((row, col), angle) = position
+    val rotated = getBlocksFromAngle(angle)
+    rotated map {case (blockX, blockY) => (row + blockX, col + blockY)}
+  }
+
+  private def getBoundariesFromAngle(angle: Int): Iterable[Position] = {
+    val grouped = getBlocksFromAngle(angle) groupBy {_._2}
+    grouped.values map {col => (col maxBy {_._1}, angle)}
+  }
+
+  private def rotateRight(block: Block): Block = (block._2, width - block._1 - 1)
+
+  private def rotateLeft(block: Block): Block = (width - block._2 - 1, block._1)
+
+  private def flip(block: Block): Block = (width - block._1 - 1, width - block._2 - 1)
+}
+
 object AiBlockBattle {
   type GameState = Map[String, String]
   type Field = Array[Array[Boolean]]
@@ -63,9 +110,9 @@ object AiBlockBattle {
     'J' -> "X  XXX   ",
     'L' -> "  XXXX   ",
     'O' -> "XXXX",
-    'S' -> "XX  XX   ",
+    'S' -> " XXXX    ",
     'T' -> " X XXX   ",
-    'Z' -> " XXXX    ")
+    'Z' -> "XX  XX   ") mapValues {new Piece(_)}
 
   def processLine(state: GameState, line: String): GameState = {
     val fields = line split ' '
@@ -84,18 +131,17 @@ object AiBlockBattle {
     val this_piece_type = state("game/this_piece_type")(0)
     val width = state("field_width").toInt
     val boundaries = getBoundaries(my_field)
-    val potentialMoves = for (i <- pieceSets(this_piece_type); j <- boundaries) yield getMoves(i, j)
+    val piece = pieces(this_piece_type)
+    val potentialMoves = piece.getPositionsFromBoundaries(boundaries)
+    potentialMoves foreach println
+    // TODO:  validate
+    /*
     val validMoves = potentialMoves filter moveValid(my_field, width)_
 
     val aStar = new AStar(heuristic, getNeighbors(my_field)_)
     val path = aStar.getPath(((0, 0), 0), ((5, 5), 90))
     println(pathToMoves(path).mkString(","))
-  }
-
-  def getMoves(piece: Set[Block], boundary: Block): Set[Block] = {
-    val (row, col) = boundary
-    val result = piece map {case (pieceRow, pieceCol) => (pieceRow + row, pieceCol + col)}
-    result
+    */
   }
 
   def moveValid(field: Field, width: Int)(move: Set[Block]): Boolean = {
@@ -117,7 +163,7 @@ object AiBlockBattle {
 
     val blocks = for (row <- 0 until height; col <- 0 until width) yield (row, col)
     val bottomBlocks = for (col <- 0 until width) yield (height, col)
-    (blocks filter isBoundary) ++ (bottomBlocks filter {case (row, col) => !field(row)(col)})
+    (blocks filter isBoundary) ++ (bottomBlocks filter {case (row, col) => field(row)(col)})
   }
 
   def printField(field: Field): Unit = {
@@ -138,42 +184,6 @@ object AiBlockBattle {
     state foreach printSetting
   }
 
-  def rotateRight(piece: IndexedSeq[Block], width: Int): IndexedSeq[Block] = {
-     piece map {case (row, col) => (col, width - row - 1)}
-  }
-
-  def rotateLeft(piece: IndexedSeq[Block], width: Int): IndexedSeq[Block] = {
-     piece map {case (row, col) => (width - col - 1, row)}
-  }
-
-  def getPieceBoundaries(piece: IndexedSeq[Block]): Iterable[Block] = {
-    val grouped = piece groupBy {_._2}
-    grouped.values map {_ maxBy {_._1}}
-  }
-
-  def normalizePiece(piece: IndexedSeq[Block], boundary: Block): Set[Block] = {
-    val (row, col) = boundary
-    val result = piece map {case (pieceRow, pieceCol) => (pieceRow - row, pieceCol - col)}
-    result.toSet
-  }
-
-  def getNormalizedPieces(piece: IndexedSeq[Block]): Set[Set[Block]] = {
-    val boundaries = getPieceBoundaries(piece)
-    val result = boundaries map {normalizePiece(piece, _)}
-    result.toSet
-  }
-
-  def getPieceSet(piece: String): Set[Set[Block]] = {
-    val pieceBool = piece map {_ == 'X'}
-    val indexes = pieceBool.zipWithIndex filter {_._1} map {_._2}
-    val width = math.floor(math.sqrt(pieceBool.size)).toInt
-    val result = indexes map {index => (index / width, index % width)}
-    val rotations = Set(result, rotateRight(result, width), rotateLeft(result, width), rotateLeft(rotateLeft(result, width), width))
-    rotations flatMap getNormalizedPieces
-  }
-
-  val pieceSets = pieces mapValues getPieceSet
-
   def normalizeAngle(angle: Int): Int = {
     if (angle > 180)
       angle - 360
@@ -192,7 +202,7 @@ object AiBlockBattle {
     val diffX = (goalX - startX).toDouble
     val diffY = (goalY - startY).toDouble
 
-    sqrt(diffX * diffX + diffY * diffY) + angleDiff.toDouble
+    diffX * diffX + diffY * diffY + angleDiff.toDouble
   }
 
   def getNeighbors(field: Field)(position: Position): Set[Position] = {
@@ -228,8 +238,8 @@ object AiBlockBattle {
 
     if (path.size < 2)
       return Iterator("no_moves")
-    val pairs = path.sliding(2)
-    pairs map pairToMove
+
+    path.sliding(2) map pairToMove
   }
 
   def main(args: Array[String]) {
