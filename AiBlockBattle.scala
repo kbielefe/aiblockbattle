@@ -89,7 +89,7 @@ object AiBlockBattle {
 
     val aStar = new AStar(heuristic, getNeighbors(my_field)_)
     val path = aStar.getPath(((0, 0), 0), ((5, 5), 90))
-    path foreach println
+    println(pathToMoves(path).mkString(","))
   }
 
   def getMoves(piece: Set[Block], boundary: Block): Set[Block] = {
@@ -174,12 +174,21 @@ object AiBlockBattle {
 
   val pieceSets = pieces mapValues getPieceSet
 
+  def normalizeAngle(angle: Int): Int = {
+    if (angle > 180)
+      angle - 360
+    else if (angle <= -180)
+      angle + 360
+    else
+      angle
+  }
+
   def heuristic(start: Position, goal: Position): Double = {
     import math._
 
     val ((startX, startY), startAngle) = start
     val ((goalX, goalY), goalAngle) = goal
-    val angleDiff = abs(startAngle - goalAngle) / 90 // TODO: fix
+    val angleDiff = abs(normalizeAngle(goalAngle - startAngle))
     val diffX = (goalX - startX).toDouble
     val diffY = (goalY - startY).toDouble
 
@@ -188,15 +197,39 @@ object AiBlockBattle {
 
   def getNeighbors(field: Field)(position: Position): Set[Position] = {
     val ((x, y), angle) = position
-    // down, left, right, drop, rotateRight, rotateLeft
-    //TODO: drop
     //TODO: filter valid moves for field
-    //TODO:  normalize angles
     Set(((x, y+1), angle),
         ((x-1, y), angle),
         ((x+1, y), angle),
-        ((x, y), (angle + 270) % 360),
-        ((x, y), (angle + 90) % 360))
+        ((x, y), normalizeAngle(angle - 90)),
+        ((x, y), normalizeAngle(angle + 90)))
+  }
+
+  def pathToMoves(path: List[Position]): Iterator[String] = {
+    def pairToMove(pair: List[Position]): String = {
+      val List(first, second) = pair
+      val ((firstX, firstY), firstAngle) = first
+      val ((secondX, secondY), secondAngle) = second
+
+      if (firstY != secondY) {
+        "down"
+      } else if (firstX < secondX) {
+        "right"
+      } else if (firstX > secondX) {
+        "left"
+      } else if (normalizeAngle(firstAngle - secondAngle) == -90) {
+        "turnright"
+      } else if (normalizeAngle(firstAngle - secondAngle) == 90) {
+        "turnleft"
+      } else {
+        "confused"
+      }
+    }
+
+    if (path.size < 2)
+      return Iterator("no_moves")
+    val pairs = path.sliding(2)
+    pairs map pairToMove
   }
 
   def main(args: Array[String]) {
