@@ -1,46 +1,30 @@
-class aStar(start: (Int, Int), field: Array[Array[Boolean]]) {
+class AStar[Position](
+    heuristic: (Position, Position) => Double,
+    getNeighbors: Position => Set[Position]) {
   import scala.annotation.tailrec
-  import math.sqrt
-  type Cell = (Int, Int)
 
-  def heuristic(goal: Cell)(position: Cell): Double = {
-    val (x, y) = position
-    val (goalX, goalY) = goal
-    val dx = (x - goalX).toDouble
-    val dy = (y - goalY).toDouble
-
-    sqrt(dx * dx + dy * dy)
-  }
-
-  def reconstructPath(start: Cell, goal: Cell, cameFrom: Map[Cell, Cell]): Cell = {
+  def getPath(start: Position, goal: Position) : List[Position] = {
     @tailrec
-    def helper(current: Cell): Cell = {
-      if (cameFrom(current) == start)
-        return current
-      helper(cameFrom(current))
-    }
+    def helper(closed: Set[Position], open: Set[Position], cameFrom: Map[Position, Position],
+      g: Map[Position, Double], f: Map[Position, Double]): List[Position] = {
 
-    helper(goal)
-  }
-
-  def aStar(goal: Cell, obstacles: Set[Cell]) : Cell = {
-    @tailrec
-    def helper(closed: Set[Cell], open: Set[Cell], cameFrom: Map[Cell, Cell],
-      g: Map[Cell, Double], f: Map[Cell, Double]): Cell = {
+      if (open.isEmpty)
+        return List[Position]()
 
       val current = open minBy {f(_)}
       if (current == goal)
         return reconstructPath(start, goal, cameFrom)
+
       val tentativeG = g(current) + 1.0
 
-      val neighbors = getNeighbors(current) -- closed -- obstacles
+      val neighbors = getNeighbors(current) -- closed
       val notOpenNeighbors = neighbors -- open
       val betterNeighbors = (neighbors & open) filter {tentativeG < g(_)}
       val newNeighbors = notOpenNeighbors ++ betterNeighbors
 
       val newCameFrom = cameFrom ++ (newNeighbors map {(_, current)})
       val newG = g ++ (newNeighbors map {(_, tentativeG)})
-      val newF = f ++ (newNeighbors map {neighbor => (neighbor, tentativeG + heuristic(goal)(neighbor))})
+      val newF = f ++ (newNeighbors map {neighbor => (neighbor, tentativeG + heuristic(neighbor, goal))})
 
       val newClosed = closed + current
       val newOpen = open ++ newNeighbors - current
@@ -48,17 +32,23 @@ class aStar(start: (Int, Int), field: Array[Array[Boolean]]) {
       helper(newClosed, newOpen, newCameFrom, newG, newF)
     }
 
-    val closed = Set[Cell]()
+    val closed = Set[Position]()
     val open = Set(start)
-    val cameFrom = Map[Cell, Cell]()
-    val g = Map[Cell, Double](start -> 0.0)
-    val f = Map[Cell, Double](start -> heuristic(goal)(start))
+    val cameFrom = Map[Position, Position]()
+    val g = Map[Position, Double](start -> 0.0)
+    val f = Map[Position, Double](start -> heuristic(start, goal))
     helper(closed, open, cameFrom, g, f)
   }
 
-  def getNeighbors(position: Cell): Set[Cell] = {
-    val (x, y) = position
-    Set((x-1, y-1), (x, y-1), (x+1, y-1), (x-1, y), (x+1, y), (x-1, y+1), (x, y+1), (x+1, y+1))
+  private def reconstructPath(start: Position, goal: Position, cameFrom: Map[Position, Position]): List[Position] = {
+    @tailrec
+    def helper(current: Position, result: List[Position]): List[Position] = {
+      if (current == start)
+        return start :: result
+      helper(cameFrom(current), current :: result)
+    }
+
+    helper(goal, List[Position]())
   }
 }
 
@@ -66,6 +56,7 @@ object AiBlockBattle {
   type GameState = Map[String, String]
   type Field = Array[Array[Boolean]]
   type Block = (Int, Int)
+  type Position = (Block, Int) // Origin, angle
 
   val pieces = Map(
     'I' -> "    XXXX        ",
@@ -95,6 +86,10 @@ object AiBlockBattle {
     val boundaries = getBoundaries(my_field)
     val potentialMoves = for (i <- pieceSets(this_piece_type); j <- boundaries) yield getMoves(i, j)
     val validMoves = potentialMoves filter moveValid(my_field, width)_
+
+    val aStar = new AStar(heuristic, getNeighbors(my_field)_)
+    val path = aStar.getPath(((0, 0), 0), ((5, 5), 90))
+    path foreach println
   }
 
   def getMoves(piece: Set[Block], boundary: Block): Set[Block] = {
@@ -178,6 +173,31 @@ object AiBlockBattle {
   }
 
   val pieceSets = pieces mapValues getPieceSet
+
+  def heuristic(start: Position, goal: Position): Double = {
+    import math._
+
+    val ((startX, startY), startAngle) = start
+    val ((goalX, goalY), goalAngle) = goal
+    val angleDiff = abs(startAngle - goalAngle) / 90 // TODO: fix
+    val diffX = (goalX - startX).toDouble
+    val diffY = (goalY - startY).toDouble
+
+    sqrt(diffX * diffX + diffY * diffY) + angleDiff.toDouble
+  }
+
+  def getNeighbors(field: Field)(position: Position): Set[Position] = {
+    val ((x, y), angle) = position
+    // down, left, right, drop, rotateRight, rotateLeft
+    //TODO: drop
+    //TODO: filter valid moves for field
+    //TODO:  normalize angles
+    Set(((x, y+1), angle),
+        ((x-1, y), angle),
+        ((x+1, y), angle),
+        ((x, y), (angle + 270) % 360),
+        ((x, y), (angle + 90) % 360))
+  }
 
   def main(args: Array[String]) {
     val lines = io.Source.stdin.getLines
