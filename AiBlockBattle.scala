@@ -110,7 +110,7 @@ class Field(string: String) {
     if (row < 0)
       return true
 
-    if (row > height || col < 0 || col >= width)
+    if (row >= height || col < 0 || col >= width)
       return false
 
     val cell = array(row)(col)
@@ -176,15 +176,11 @@ object AiBlockBattle {
     def isBoundary(block: Block): Boolean = {
       val (row, col) = block
       val below = (row+1, col)
-      field.isEmpty(below) && !field.isEmpty(block)
+      !field.isEmpty(below) && field.isEmpty(block)
     }
 
-    val height = field.height - 1
-    val width  = field.width
-
-    val blocks = for (row <- 0 until height; col <- 0 until width) yield (row, col)
-    val bottomBlocks = for (col <- 0 until width) yield (height, col)
-    (blocks filter isBoundary) ++ (bottomBlocks filter {field.isEmpty(_)})
+    val blocks = for (row <- 0 until field.height; col <- 0 until field.width) yield (row, col)
+    blocks filter isBoundary
   }
 
   def normalizeAngle(angle: Int): Int = {
