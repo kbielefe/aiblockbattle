@@ -201,12 +201,12 @@ object AiBlockBattle {
   }
 
   def getNeighbors(field: Field, piece: Piece)(position: Position): Set[Position] = {
-    val ((x, y), angle) = position
-    val allNeighbors = Set(((x, y+1), angle),
-                           ((x-1, y), angle),
-                           ((x+1, y), angle),
-                           ((x, y), normalizeAngle(angle - 90)),
-                           ((x, y), normalizeAngle(angle + 90)))
+    val ((row, col), angle) = position
+    val allNeighbors = Set(((row+1, col), angle),
+                           ((row, col-1), angle),
+                           ((row, col+1), angle),
+                           ((row, col), normalizeAngle(angle - 90)),
+                           ((row, col), normalizeAngle(angle + 90)))
 
     allNeighbors filter {neighbor => field.moveValid(piece.getBlocksFromPosition(neighbor))}
   }
