@@ -137,15 +137,15 @@ object AiBlockBattle {
     val potentialPositions = piece.getPositionsFromBoundaries(boundaries).toSet
     val potentialBlocks = potentialPositions map {position => (position, piece.getBlocksFromPosition(position))}
     val groupedBlocks = potentialBlocks groupBy {_._2} mapValues {_ map {_._1}}
-    val validMoves = groupedBlocks filter {group => moveValid(my_field, width)(group._1)}
+    val validMoves = groupedBlocks filter {group => moveValid(my_field, width, group._1)}
     val goal = validMoves.head._2.head
 
-    val aStar = new AStar(heuristic, getNeighbors(my_field)_)
+    val aStar = new AStar(heuristic, getNeighbors(my_field, width, piece)_)
     val path = aStar.getPath(start, goal)
     println(pathToMoves(path).mkString(","))
   }
 
-  def moveValid(field: Field, width: Int)(move: Set[Block]): Boolean = {
+  def moveValid(field: Field, width: Int, move: Set[Block]): Boolean = {
     move forall {case (row, col) => col >= 0 && col < width && (row < 0 || field(row)(col))}
   }
 
@@ -206,14 +206,15 @@ object AiBlockBattle {
     diffX * diffX + diffY * diffY + angleDiff.toDouble
   }
 
-  def getNeighbors(field: Field)(position: Position): Set[Position] = {
+  def getNeighbors(field: Field, width: Int, piece: Piece)(position: Position): Set[Position] = {
     val ((x, y), angle) = position
-    //TODO: filter valid moves for field
-    Set(((x, y+1), angle),
-        ((x-1, y), angle),
-        ((x+1, y), angle),
-        ((x, y), normalizeAngle(angle - 90)),
-        ((x, y), normalizeAngle(angle + 90)))
+    val allNeighbors = Set(((x, y+1), angle),
+                           ((x-1, y), angle),
+                           ((x+1, y), angle),
+                           ((x, y), normalizeAngle(angle - 90)),
+                           ((x, y), normalizeAngle(angle + 90)))
+
+    allNeighbors filter {neighbor => moveValid(field, width, piece.getBlocksFromPosition(neighbor))}
   }
 
   def pathToMoves(path: List[Position]): Iterator[String] = {
