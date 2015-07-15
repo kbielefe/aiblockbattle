@@ -106,7 +106,9 @@ class Field(string: String) {
   val height = array.size
   val width = array(0).size
 
-  def isEmpty(row: Int, col: Int): Boolean = {
+  def isEmpty(block: Block): Boolean = {
+    val (row, col) = block
+
     if (row < 0)
       return true
 
@@ -117,15 +119,9 @@ class Field(string: String) {
     cell == 0 || cell == 1
   }
 
-  def isEmpty(block: Block): Boolean = {
-    val (row, col) = block
-    isEmpty(row, col)
-  }
-
   def moveValid(move: Set[Block]): Boolean = {
     move forall isEmpty
   }
-
 }
 
 object AiBlockBattle {
