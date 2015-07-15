@@ -247,9 +247,11 @@ object AiBlockBattle {
     val validMoves = groupedBlocks filter {block => my_field.moveValid(block._1)}
     val metrics = validMoves map {case (blocks, positions) => new Metric(blocks, positions, my_field, piece, start)}
     val sortedMetrics = metrics.toArray.filterNot(_.lostGame).sortBy(_.blockHeight).reverse.sortBy(_.holeCount)
-    val path = sortedMetrics.dropWhile(_.path.size == 0).head.path
-
-    println(pathToMoves(path).mkString(","))
+    val path = sortedMetrics.dropWhile(_.path.size == 0)
+    if (path.isEmpty)
+      println("no_moves")
+    else
+      println(pathToMoves(path.head.path).mkString(","))
   }
 
   def getBoundaries(field: Field): IndexedSeq[Block] = {
