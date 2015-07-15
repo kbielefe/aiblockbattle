@@ -153,9 +153,10 @@ class MovedField(field: Field, blocks: Set[(Int, Int)]) {
   }
 
   def lostGame: Boolean = cleared exists {_._1 < 0}
-
 }
 
+//TODO:  Add distance from preferred side for piece and position
+//       Add horizontal gap width
 case class Metric(blocks: Set[(Int, Int)], positions: Set[((Int, Int), Int)], field: Field, piece: Piece, start: ((Int, Int), Int), combo: Int) {
   type Block = (Int, Int)
   type Position = (Block, Int) // Origin, angle
