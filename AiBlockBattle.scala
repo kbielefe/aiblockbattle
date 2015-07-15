@@ -129,6 +129,15 @@ case class Metric(blocks: Set[(Int, Int)], positions: Set[((Int, Int), Int)], fi
   type Position = (Block, Int) // Origin, angle
 
   lazy val blockHeight = blocks.toList.map(_._1).sum
+
+  lazy val holeCount = {
+    val colHoles = for (col <- 0 until field.width) yield {
+      def empty(row: Int) = field.isEmpty((row, col)) && !blocks.contains((row, col))
+      (0 until field.height) dropWhile empty count empty
+    }
+    colHoles.sum
+  }
+
   lazy val path = {
     val aStar = new AStar(heuristic, getNeighbors(field, piece)_)
     val goals = positions.toArray.sortBy(position => math.abs(position._2)).iterator
@@ -188,6 +197,13 @@ object AiBlockBattle {
     }
   }
 
+  def layerSort(a: Metric, b: Metric): Boolean = {
+    if (a.holeCount == b.holeCount)
+      a.blockHeight >= b.blockHeight
+    else
+      a.holeCount < b.holeCount
+  }
+
   def outputMove(state: GameState, time: Int): Unit = {
     val my_bot = state("your_bot")
     val my_field = new Field(state(my_bot + "/field"))
@@ -201,7 +217,7 @@ object AiBlockBattle {
     val groupedBlocks = potentialBlocks groupBy {_._2} mapValues {_ map {_._1}}
     val validMoves = groupedBlocks filter {block => my_field.moveValid(block._1)}
     val metrics = validMoves map {case (blocks, positions) => new Metric(blocks, positions, my_field, piece, start)}
-    val sortedMetrics = metrics.toArray.sortBy(_.blockHeight).reverse
+    val sortedMetrics = metrics.toArray.sortWith(layerSort)
     val path = sortedMetrics.dropWhile(_.path.size == 0).head.path
 
     println(pathToMoves(path).mkString(","))
