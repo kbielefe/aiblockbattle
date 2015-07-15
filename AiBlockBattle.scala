@@ -99,9 +99,37 @@ class Piece(string: String) {
   private def flip(block: Block): Block = (width - block._1 - 1, width - block._2 - 1)
 }
 
+class Field(string: String) {
+  type Block = (Int, Int)
+
+  private val array = string split ';' map {_ split ',' map {_.toInt}}
+  val height = array.size
+  val width = array(0).size
+
+  def isEmpty(row: Int, col: Int): Boolean = {
+    if (row < 0)
+      return true
+
+    if (row > height || col < 0 || col >= width)
+      return false
+
+    val cell = array(row)(col)
+    cell == 0 || cell == 1
+  }
+
+  def isEmpty(block: Block): Boolean = {
+    val (row, col) = block
+    isEmpty(row, col)
+  }
+
+  def moveValid(move: Set[Block]): Boolean = {
+    move forall isEmpty
+  }
+
+}
+
 object AiBlockBattle {
   type GameState = Map[String, String]
-  type Field = Array[Array[Boolean]]
   type Block = (Int, Int)
   type Position = (Block, Int) // Origin, angle
 
@@ -127,62 +155,36 @@ object AiBlockBattle {
 
   def outputMove(state: GameState, time: Int): Unit = {
     val my_bot = state("your_bot")
-    val my_field = getField(state(my_bot + "/field"))
+    val my_field = new Field(state(my_bot + "/field"))
     val this_piece_type = state("game/this_piece_type")(0)
     val this_piece_position = state("game/this_piece_position") split ','
     val start = ((this_piece_position(1).toInt, this_piece_position(0).toInt), 0)
-    val width = state("field_width").toInt
     val boundaries = getBoundaries(my_field)
     val piece = pieces(this_piece_type)
     val potentialPositions = piece.getPositionsFromBoundaries(boundaries).toSet
     val potentialBlocks = potentialPositions map {position => (position, piece.getBlocksFromPosition(position))}
     val groupedBlocks = potentialBlocks groupBy {_._2} mapValues {_ map {_._1}}
-    val validMoves = groupedBlocks filter {group => moveValid(my_field, width, group._1)}
+    val validMoves = groupedBlocks filter {block => my_field.moveValid(block._1)}
     val goal = validMoves.head._2.head
 
-    val aStar = new AStar(heuristic, getNeighbors(my_field, width, piece)_)
+    val aStar = new AStar(heuristic, getNeighbors(my_field, piece)_)
     val path = aStar.getPath(start, goal)
     println(pathToMoves(path).mkString(","))
-  }
-
-  def moveValid(field: Field, width: Int, move: Set[Block]): Boolean = {
-    move forall {case (row, col) => col >= 0 && col < width && (row < 0 || field(row)(col))}
-  }
-
-  def getField(field: String): Field = {
-    field split ';' map {_ split ',' map {cell => cell != "3" && cell != "4"}}
   }
 
   def getBoundaries(field: Field): IndexedSeq[Block] = {
     def isBoundary(block: Block): Boolean = {
       val (row, col) = block
-      !field(row+1)(col) && field(row)(col)
+      val below = (row+1, col)
+      field.isEmpty(below) && !field.isEmpty(block)
     }
 
-    val height = field.size - 1
-    val width  = field(0).size
+    val height = field.height - 1
+    val width  = field.width
 
     val blocks = for (row <- 0 until height; col <- 0 until width) yield (row, col)
     val bottomBlocks = for (col <- 0 until width) yield (height, col)
-    (blocks filter isBoundary) ++ (bottomBlocks filter {case (row, col) => field(row)(col)})
-  }
-
-  def printField(field: Field): Unit = {
-    field map {_ mkString ""} foreach println
-  }
-
-  def printState(state: GameState): Unit = {
-    def printSetting(setting: (String, String)): Unit = {
-      val (a, b) = setting
-      if (a endsWith "/field") {
-        println(a + " -> ")
-        printField(getField(b))
-      } else {
-        println(a + " -> " + b)
-      }
-    }
-
-    state foreach printSetting
+    (blocks filter isBoundary) ++ (bottomBlocks filter {field.isEmpty(_)})
   }
 
   def normalizeAngle(angle: Int): Int = {
@@ -206,7 +208,7 @@ object AiBlockBattle {
     diffX * diffX + diffY * diffY + angleDiff.toDouble
   }
 
-  def getNeighbors(field: Field, width: Int, piece: Piece)(position: Position): Set[Position] = {
+  def getNeighbors(field: Field, piece: Piece)(position: Position): Set[Position] = {
     val ((x, y), angle) = position
     val allNeighbors = Set(((x, y+1), angle),
                            ((x-1, y), angle),
@@ -214,7 +216,7 @@ object AiBlockBattle {
                            ((x, y), normalizeAngle(angle - 90)),
                            ((x, y), normalizeAngle(angle + 90)))
 
-    allNeighbors filter {neighbor => moveValid(field, width, piece.getBlocksFromPosition(neighbor))}
+    allNeighbors filter {neighbor => field.moveValid(piece.getBlocksFromPosition(neighbor))}
   }
 
   def pathToMoves(path: List[Position]): Iterator[String] = {
