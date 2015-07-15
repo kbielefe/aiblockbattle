@@ -197,13 +197,6 @@ object AiBlockBattle {
     }
   }
 
-  def layerSort(a: Metric, b: Metric): Boolean = {
-    if (a.holeCount == b.holeCount)
-      a.blockHeight >= b.blockHeight
-    else
-      a.holeCount < b.holeCount
-  }
-
   def outputMove(state: GameState, time: Int): Unit = {
     val my_bot = state("your_bot")
     val my_field = new Field(state(my_bot + "/field"))
@@ -217,7 +210,7 @@ object AiBlockBattle {
     val groupedBlocks = potentialBlocks groupBy {_._2} mapValues {_ map {_._1}}
     val validMoves = groupedBlocks filter {block => my_field.moveValid(block._1)}
     val metrics = validMoves map {case (blocks, positions) => new Metric(blocks, positions, my_field, piece, start)}
-    val sortedMetrics = metrics.toArray.sortWith(layerSort)
+    val sortedMetrics = metrics.toArray.sortBy(_.blockHeight).reverse.sortBy(_.holeCount)
     val path = sortedMetrics.dropWhile(_.path.size == 0).head.path
 
     println(pathToMoves(path).mkString(","))
