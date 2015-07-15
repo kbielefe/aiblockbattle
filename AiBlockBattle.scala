@@ -124,6 +124,45 @@ class Field(string: String) {
   }
 }
 
+case class Metric(blocks: Set[(Int, Int)], positions: Set[((Int, Int), Int)], field: Field, piece: Piece, start: ((Int, Int), Int)) {
+  type Block = (Int, Int)
+  type Position = (Block, Int) // Origin, angle
+
+  lazy val blockHeight = blocks.toList.map(_._1).sum
+  lazy val path = {
+    val aStar = new AStar(heuristic, getNeighbors(field, piece)_)
+    val goals = positions.toArray.sortBy(position => math.abs(position._2)).iterator
+    val paths = goals map {aStar.getPath(start, _)} dropWhile {_.isEmpty}
+    if (paths.hasNext)
+      paths.next()
+    else
+      List[Position]()
+  }
+
+  private def heuristic(start: Position, goal: Position): Double = {
+    import math._
+
+    val ((startX, startY), startAngle) = start
+    val ((goalX, goalY), goalAngle) = goal
+    val angleDiff = abs(AiBlockBattle.normalizeAngle(goalAngle - startAngle)) / 90
+    val diffX = (goalX - startX).toDouble
+    val diffY = (goalY - startY).toDouble
+
+    diffX * diffX + diffY * diffY + angleDiff.toDouble
+  }
+
+  private def getNeighbors(field: Field, piece: Piece)(position: Position): Set[Position] = {
+    val ((row, col), angle) = position
+    val allNeighbors = Set(((row+1, col), angle),
+                           ((row, col-1), angle),
+                           ((row, col+1), angle),
+                           ((row, col), AiBlockBattle.normalizeAngle(angle - 90)),
+                           ((row, col), AiBlockBattle.normalizeAngle(angle + 90)))
+
+    allNeighbors filter {neighbor => field.moveValid(piece.getBlocksFromPosition(neighbor))}
+  }
+}
+
 object AiBlockBattle {
   type GameState = Map[String, String]
   type Block = (Int, Int)
@@ -161,10 +200,10 @@ object AiBlockBattle {
     val potentialBlocks = potentialPositions map {position => (position, piece.getBlocksFromPosition(position))}
     val groupedBlocks = potentialBlocks groupBy {_._2} mapValues {_ map {_._1}}
     val validMoves = groupedBlocks filter {block => my_field.moveValid(block._1)}
-    val goal = validMoves.maxBy(move => move._1.toList.map(_._1).sum)._2.head
+    val metrics = validMoves map {case (blocks, positions) => new Metric(blocks, positions, my_field, piece, start)}
+    val sortedMetrics = metrics.toArray.sortBy(_.blockHeight).reverse
+    val path = sortedMetrics.dropWhile(_.path.size == 0).head.path
 
-    val aStar = new AStar(heuristic, getNeighbors(my_field, piece)_)
-    val path = aStar.getPath(start, goal)
     println(pathToMoves(path).mkString(","))
   }
 
@@ -186,29 +225,6 @@ object AiBlockBattle {
       angle + 360
     else
       angle
-  }
-
-  def heuristic(start: Position, goal: Position): Double = {
-    import math._
-
-    val ((startX, startY), startAngle) = start
-    val ((goalX, goalY), goalAngle) = goal
-    val angleDiff = abs(normalizeAngle(goalAngle - startAngle)) / 90
-    val diffX = (goalX - startX).toDouble
-    val diffY = (goalY - startY).toDouble
-
-    diffX * diffX + diffY * diffY + angleDiff.toDouble
-  }
-
-  def getNeighbors(field: Field, piece: Piece)(position: Position): Set[Position] = {
-    val ((row, col), angle) = position
-    val allNeighbors = Set(((row+1, col), angle),
-                           ((row, col-1), angle),
-                           ((row, col+1), angle),
-                           ((row, col), normalizeAngle(angle - 90)),
-                           ((row, col), normalizeAngle(angle + 90)))
-
-    allNeighbors filter {neighbor => field.moveValid(piece.getBlocksFromPosition(neighbor))}
   }
 
   def pathToMoves(path: List[Position]): Iterator[String] = {
