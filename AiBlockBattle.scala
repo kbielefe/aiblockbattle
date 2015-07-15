@@ -151,6 +151,9 @@ class MovedField(field: Field, blocks: Set[(Int, Int)]) {
   def isEmpty(block: Block): Boolean = {
     !(cleared contains block)
   }
+
+  def lostGame: Boolean = cleared exists {_._1 < 0}
+
 }
 
 case class Metric(blocks: Set[(Int, Int)], positions: Set[((Int, Int), Int)], field: Field, piece: Piece, start: ((Int, Int), Int)) {
@@ -168,6 +171,8 @@ case class Metric(blocks: Set[(Int, Int)], positions: Set[((Int, Int), Int)], fi
     }
     colHoles.sum
   }
+
+  lazy val lostGame = movedField.lostGame
 
   lazy val path = {
     val aStar = new AStar(heuristic, getNeighbors(field, piece)_)
@@ -241,7 +246,7 @@ object AiBlockBattle {
     val groupedBlocks = potentialBlocks groupBy {_._2} mapValues {_ map {_._1}}
     val validMoves = groupedBlocks filter {block => my_field.moveValid(block._1)}
     val metrics = validMoves map {case (blocks, positions) => new Metric(blocks, positions, my_field, piece, start)}
-    val sortedMetrics = metrics.toArray.sortBy(_.blockHeight).reverse.sortBy(_.holeCount)
+    val sortedMetrics = metrics.toArray.filterNot(_.lostGame).sortBy(_.blockHeight).reverse.sortBy(_.holeCount)
     val path = sortedMetrics.dropWhile(_.path.size == 0).head.path
 
     println(pathToMoves(path).mkString(","))
