@@ -132,12 +132,13 @@ object AiBlockBattle {
     val width = state("field_width").toInt
     val boundaries = getBoundaries(my_field)
     val piece = pieces(this_piece_type)
-    val potentialMoves = piece.getPositionsFromBoundaries(boundaries)
-    potentialMoves foreach println
-    // TODO:  validate
-    /*
-    val validMoves = potentialMoves filter moveValid(my_field, width)_
+    val potentialPositions = piece.getPositionsFromBoundaries(boundaries).toSet
+    val potentialBlocks = potentialPositions map {position => (position, piece.getBlocksFromPosition(position))}
+    val groupedBlocks = potentialBlocks groupBy {_._2} mapValues {_ map {_._1}}
+    val validMoves = groupedBlocks filter {group => moveValid(my_field, width)(group._1)}
+    validMoves foreach println
 
+    /*
     val aStar = new AStar(heuristic, getNeighbors(my_field)_)
     val path = aStar.getPath(((0, 0), 0), ((5, 5), 90))
     println(pathToMoves(path).mkString(","))
@@ -145,7 +146,7 @@ object AiBlockBattle {
   }
 
   def moveValid(field: Field, width: Int)(move: Set[Block]): Boolean = {
-    move forall {case (row, col) => row >= 0 && col >= 0 && col < width && !field(row)(col)}
+    move forall {case (row, col) => col >= 0 && col < width && (row < 0 || field(row)(col))}
   }
 
   def getField(field: String): Field = {
