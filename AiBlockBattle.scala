@@ -156,7 +156,7 @@ class MovedField(field: Field, blocks: Set[(Int, Int)]) {
 
 }
 
-case class Metric(blocks: Set[(Int, Int)], positions: Set[((Int, Int), Int)], field: Field, piece: Piece, start: ((Int, Int), Int)) {
+case class Metric(blocks: Set[(Int, Int)], positions: Set[((Int, Int), Int)], field: Field, piece: Piece, start: ((Int, Int), Int), combo: Int) {
   type Block = (Int, Int)
   type Position = (Block, Int) // Origin, angle
 
@@ -182,6 +182,16 @@ case class Metric(blocks: Set[(Int, Int)], positions: Set[((Int, Int), Int)], fi
       paths.next()
     else
       List[Position]()
+  }
+
+  lazy val points = {
+    val count = movedField.clearCount 
+    if (count == 4)
+      8
+    else if (count > 0)
+      count + combo
+    else
+      0
   }
 
   private def heuristic(start: Position, goal: Position): Double = {
@@ -236,6 +246,7 @@ object AiBlockBattle {
   def outputMove(state: GameState, time: Int): Unit = {
     val my_bot = state("your_bot")
     val my_field = new Field(state(my_bot + "/field"))
+    val combo = state(my_bot + "/combo").toInt
     val this_piece_type = state("game/this_piece_type")(0)
     val this_piece_position = state("game/this_piece_position") split ','
     val start = ((this_piece_position(1).toInt, this_piece_position(0).toInt), 0)
@@ -245,8 +256,8 @@ object AiBlockBattle {
     val potentialBlocks = potentialPositions map {position => (position, piece.getBlocksFromPosition(position))}
     val groupedBlocks = potentialBlocks groupBy {_._2} mapValues {_ map {_._1}}
     val validMoves = groupedBlocks filter {block => my_field.moveValid(block._1)}
-    val metrics = validMoves map {case (blocks, positions) => new Metric(blocks, positions, my_field, piece, start)}
-    val sortedMetrics = metrics.toArray.filterNot(_.lostGame).sortBy(_.blockHeight).reverse.sortBy(_.holeCount)
+    val metrics = validMoves map {case (blocks, positions) => new Metric(blocks, positions, my_field, piece, start, combo)}
+    val sortedMetrics = metrics.toArray.filterNot(_.lostGame).sortBy(-1 * _.blockHeight).sortBy(_.holeCount).sortBy(-1 * _.points)
     val path = sortedMetrics.dropWhile(_.path.size == 0)
     if (path.isEmpty)
       println("no_moves")
