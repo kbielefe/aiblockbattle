@@ -129,6 +129,8 @@ object AiBlockBattle {
     val my_bot = state("your_bot")
     val my_field = getField(state(my_bot + "/field"))
     val this_piece_type = state("game/this_piece_type")(0)
+    val this_piece_position = state("game/this_piece_position") split ','
+    val start = ((this_piece_position(1).toInt, this_piece_position(0).toInt), 0)
     val width = state("field_width").toInt
     val boundaries = getBoundaries(my_field)
     val piece = pieces(this_piece_type)
@@ -136,13 +138,11 @@ object AiBlockBattle {
     val potentialBlocks = potentialPositions map {position => (position, piece.getBlocksFromPosition(position))}
     val groupedBlocks = potentialBlocks groupBy {_._2} mapValues {_ map {_._1}}
     val validMoves = groupedBlocks filter {group => moveValid(my_field, width)(group._1)}
-    validMoves foreach println
+    val goal = validMoves.head._2.head
 
-    /*
     val aStar = new AStar(heuristic, getNeighbors(my_field)_)
-    val path = aStar.getPath(((0, 0), 0), ((5, 5), 90))
+    val path = aStar.getPath(start, goal)
     println(pathToMoves(path).mkString(","))
-    */
   }
 
   def moveValid(field: Field, width: Int)(move: Set[Block]): Boolean = {
@@ -219,14 +219,14 @@ object AiBlockBattle {
   def pathToMoves(path: List[Position]): Iterator[String] = {
     def pairToMove(pair: List[Position]): String = {
       val List(first, second) = pair
-      val ((firstX, firstY), firstAngle) = first
-      val ((secondX, secondY), secondAngle) = second
+      val ((firstRow, firstCol), firstAngle) = first
+      val ((secondRow, secondCol), secondAngle) = second
 
-      if (firstY != secondY) {
+      if (firstRow != secondRow) {
         "down"
-      } else if (firstX < secondX) {
+      } else if (firstCol < secondCol) {
         "right"
-      } else if (firstX > secondX) {
+      } else if (firstCol > secondCol) {
         "left"
       } else if (normalizeAngle(firstAngle - secondAngle) == -90) {
         "turnright"
