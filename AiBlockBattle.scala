@@ -161,7 +161,7 @@ object AiBlockBattle {
     val potentialBlocks = potentialPositions map {position => (position, piece.getBlocksFromPosition(position))}
     val groupedBlocks = potentialBlocks groupBy {_._2} mapValues {_ map {_._1}}
     val validMoves = groupedBlocks filter {block => my_field.moveValid(block._1)}
-    val goal = validMoves.head._2.head
+    val goal = validMoves.maxBy(move => move._1.toList.map(_._1).sum)._2.head
 
     val aStar = new AStar(heuristic, getNeighbors(my_field, piece)_)
     val path = aStar.getPath(start, goal)
