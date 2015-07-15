@@ -193,7 +193,7 @@ object AiBlockBattle {
 
     val ((startX, startY), startAngle) = start
     val ((goalX, goalY), goalAngle) = goal
-    val angleDiff = abs(normalizeAngle(goalAngle - startAngle))
+    val angleDiff = abs(normalizeAngle(goalAngle - startAngle)) / 90
     val diffX = (goalX - startX).toDouble
     val diffY = (goalY - startY).toDouble
 
