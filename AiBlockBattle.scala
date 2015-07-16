@@ -228,6 +228,24 @@ case class Metric(blocks: Set[(Int, Int)], positions: Set[((Int, Int), Int)], fi
     blocks count {!movedField.isEmpty(_)}
   }
 
+  private val spawnStartCol = (field.width - 4) / 2
+  private val spawnEndCol = spawnStartCol + 3
+
+  lazy val blocksInSpawn = {
+    val blocks = for (col <- spawnStartCol to spawnEndCol) yield (0, col)
+    blocks count {!movedField.isEmpty(_)}
+  }
+
+  lazy val blocksInSpawn2 = {
+    val blocks = for (col <- spawnStartCol to spawnEndCol) yield (1, col)
+    blocks count {!movedField.isEmpty(_)}
+  }
+
+  lazy val blocksInSpawn3 = {
+    val blocks = for (col <- spawnStartCol to spawnEndCol) yield (2, col)
+    blocks count {!movedField.isEmpty(_)}
+  }
+
   private lazy val holes = {
     val colHoles = for (col <- 0 until field.width) yield {
       def empty(row: Int) = movedField.isEmpty((row, col))
@@ -340,7 +358,10 @@ object AiBlockBattle {
       .sortBy(_.chimneyCount)
       .sortBy(_.holeCount)
       .sortBy(_.endGameBlocks)
+      .sortBy(_.blocksInSpawn3)
       .sortBy(-1 * _.points)
+      .sortBy(_.blocksInSpawn2)
+      .sortBy(_.blocksInSpawn)
 
     //sortedMetrics foreach Console.err.println
 
