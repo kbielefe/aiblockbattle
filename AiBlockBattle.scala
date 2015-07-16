@@ -128,6 +128,15 @@ class Field(string: String) {
     array(row)(col) == 2
   }
 
+  def isSolidBlock(block: Block): Boolean = {
+    val (row, col) = block
+
+    if (row < 0 || row >= height || col < 0 || col >= width)
+      return false
+
+    array(row)(col) == 3
+  }
+
   def moveValid(move: Set[Block]): Boolean = {
     move forall isEmpty
   }
@@ -149,7 +158,7 @@ class MovedField(field: Field, blocks: Set[(Int, Int)]) {
   val (clearCount, cleared) = (field.height - 1 to 0 by -1).foldLeft((0, Set[Block]()))(removeRow)
 
   def isEmpty(block: Block): Boolean = {
-    !(cleared contains block)
+    !(cleared contains block) && !field.isSolidBlock(block)
   }
 
   def lostGame: Boolean = cleared exists {_._1 < 0}
@@ -160,6 +169,11 @@ class MovedField(field: Field, blocks: Set[(Int, Int)]) {
 case class Metric(blocks: Set[(Int, Int)], positions: Set[((Int, Int), Int)], field: Field, piece: Piece, start: ((Int, Int), Int), combo: Int) {
   type Block = (Int, Int)
   type Position = (Block, Int) // Origin, angle
+
+  override
+  def toString: String = {
+    blockHeight.toString + " " + holeCount.toString + " " + lostGame.toString
+  }
 
   private lazy val movedField = new MovedField(field, blocks)
 
@@ -262,8 +276,10 @@ object AiBlockBattle {
     val path = sortedMetrics.dropWhile(_.path.size == 0)
     if (path.isEmpty)
       println("no_moves")
-    else
+    else {
+      Console.err.println(path.head.positions.head)
       println(pathToMoves(path.head.path).mkString(","))
+    }
   }
 
   def getBoundaries(field: Field): IndexedSeq[Block] = {
