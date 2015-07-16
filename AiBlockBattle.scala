@@ -59,14 +59,14 @@ class Piece(string: String, name: Char) {
   val width = math.floor(math.sqrt(string.size)).toInt
 
   private val preferredSide = Map(
-    ('J',   0) -> 1.0,
+    ('J',   0) -> 0.0,
     ('J', -90) -> 1.0,
     ('J',  90) -> 0.0,
-    ('J', 180) -> 0.0,
-    ('L',   0) -> 0.0,
+    ('J', 180) -> 1.0,
+    ('L',   0) -> 1.0,
     ('L', -90) -> 1.0,
     ('L',  90) -> 0.0,
-    ('L', 180) -> 1.0,
+    ('L', 180) -> 0.0,
     ('S',   0) -> 0.0,
     ('S', -90) -> 1.0,
     ('S',  90) -> 1.0,
@@ -202,6 +202,7 @@ class MovedField(field: Field, blocks: Set[(Int, Int)]) {
 }
 
 //TODO:  Prefer not to stack on top of buried holes
+//TODO:  Check for bad end-game moves, blocks with row < 3
 case class Metric(blocks: Set[(Int, Int)], positions: Set[((Int, Int), Int)], field: Field, piece: Piece, start: ((Int, Int), Int), combo: Int) {
   type Block = (Int, Int)
   type Position = (Block, Int) // Origin, angle
