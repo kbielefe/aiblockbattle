@@ -201,14 +201,13 @@ class MovedField(field: Field, blocks: Set[(Int, Int)]) {
   def lostGame: Boolean = cleared exists {_._1 < 0}
 }
 
-//TODO:  Prefer not to stack on top of buried holes
 case class Metric(blocks: Set[(Int, Int)], positions: Set[((Int, Int), Int)], field: Field, piece: Piece, start: ((Int, Int), Int), combo: Int) {
   type Block = (Int, Int)
   type Position = (Block, Int) // Origin, angle
 
   override
   def toString: String = {
-    blockHeight.toString + " " + holeCount.toString + " " + lostGame.toString + " " + chimneyCount.toString
+    blockHeight + " " + holeCount + " " + lostGame + " " + chimneyCount + " " + holeDepth + " " + positions.head
   }
 
   private lazy val movedField = new MovedField(field, blocks)
@@ -229,13 +228,24 @@ case class Metric(blocks: Set[(Int, Int)], positions: Set[((Int, Int), Int)], fi
     blocks count {!movedField.isEmpty(_)}
   }
 
-  lazy val holeCount = {
+  private lazy val holes = {
     val colHoles = for (col <- 0 until field.width) yield {
       def empty(row: Int) = movedField.isEmpty((row, col))
-      (0 until field.height) dropWhile empty count empty
+      (0 until field.height) dropWhile empty filter empty map {(_, col)}
     }
-    colHoles.sum
+    colHoles.flatten
   }
+
+  lazy val holeDepth = {
+    def depth(hole: Block): Int = {
+      val (row, col) = hole
+      (row-1 to 0 by -1) count {row => !movedField.isEmpty((row, col))}
+    }
+
+    (holes map depth).sum
+  }
+
+  lazy val holeCount = holes.size
 
   lazy val lostGame = movedField.lostGame
 
@@ -281,7 +291,6 @@ case class Metric(blocks: Set[(Int, Int)], positions: Set[((Int, Int), Int)], fi
     else
       0
   }
-
 }
 
 object AiBlockBattle {
@@ -326,6 +335,7 @@ object AiBlockBattle {
     val sortedMetrics = metrics.toArray
       .filterNot(_.lostGame)
       .sortBy(_.distanceFromPreferredSide)
+      .sortBy(_.holeDepth)
       .sortBy(-1 * _.blockHeight)
       .sortBy(_.chimneyCount)
       .sortBy(_.holeCount)
@@ -333,6 +343,7 @@ object AiBlockBattle {
       .sortBy(-1 * _.points)
 
     //sortedMetrics foreach Console.err.println
+
     val path = sortedMetrics.dropWhile(_.path.size == 0)
     if (path.isEmpty)
       println("no_moves")
