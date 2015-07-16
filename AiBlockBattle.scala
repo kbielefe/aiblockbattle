@@ -231,19 +231,18 @@ case class Metric(blocks: Set[(Int, Int)], positions: Set[((Int, Int), Int)], fi
   private val spawnStartCol = (field.width - 4) / 2
   private val spawnEndCol = spawnStartCol + 3
 
-  lazy val blocksInSpawn = {
+  private lazy val blocksInSpawn = {
     val blocks = for (col <- spawnStartCol to spawnEndCol) yield (0, col)
     blocks count {!movedField.isEmpty(_)}
   }
 
-  lazy val blocksInSpawn2 = {
-    val blocks = for (col <- spawnStartCol to spawnEndCol) yield (1, col)
-    blocks count {!movedField.isEmpty(_)}
-  }
-
-  lazy val blocksInSpawn3 = {
-    val blocks = for (col <- spawnStartCol to spawnEndCol) yield (2, col)
-    blocks count {!movedField.isEmpty(_)}
+  def loseInX(x: Int): Int = {
+    val before = for (col <- 0 until spawnStartCol) yield (x-1, col)
+    val underSpawn = for (col <- spawnStartCol to spawnEndCol) yield (x, col)
+    val after = for (col <- spawnEndCol+1 until field.width) yield (x-1, col)
+    (before count {!movedField.isEmpty(_)}) +
+      (underSpawn count {!movedField.isEmpty(_)}) +
+      (after count {!movedField.isEmpty(_)})
   }
 
   private lazy val holes = {
@@ -265,7 +264,7 @@ case class Metric(blocks: Set[(Int, Int)], positions: Set[((Int, Int), Int)], fi
 
   lazy val holeCount = holes.size
 
-  lazy val lostGame = movedField.lostGame
+  lazy val lostGame = movedField.lostGame || blocksInSpawn > 0
 
   lazy val path = {
     def heuristic(start: Position, goal: Position): Double = {
@@ -357,11 +356,10 @@ object AiBlockBattle {
       .sortBy(-1 * _.blockHeight)
       .sortBy(_.chimneyCount)
       .sortBy(_.holeCount)
-      .sortBy(_.endGameBlocks)
-      .sortBy(_.blocksInSpawn3)
+      .sortBy(_.loseInX(3))
+      .sortBy(_.loseInX(2))
       .sortBy(-1 * _.points)
-      .sortBy(_.blocksInSpawn2)
-      .sortBy(_.blocksInSpawn)
+      .sortBy(_.loseInX(1))
 
     //sortedMetrics foreach Console.err.println
 
