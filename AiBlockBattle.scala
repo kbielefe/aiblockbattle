@@ -52,11 +52,43 @@ class AStar[Position](
   }
 }
 
-class Piece(string: String) {
+class Piece(string: String, name: Char) {
   type Block = (Int, Int)
   type Position = (Block, Int)
 
   val width = math.floor(math.sqrt(string.size)).toInt
+
+  private val preferredSide = Map(
+    ('J',   0) -> 0.0,
+    ('J', -90) -> 1.0,
+    ('J',  90) -> 0.0,
+    ('J', 180) -> 1.0,
+    ('L',   0) -> 1.0,
+    ('L', -90) -> 1.0,
+    ('L',  90) -> 0.0,
+    ('L', 180) -> 0.0,
+    ('S',   0) -> 0.0,
+    ('S', -90) -> 1.0,
+    ('S',  90) -> 1.0,
+    ('S', 180) -> 0.0,
+    ('T',   0) -> 0.5,
+    ('T', -90) -> 1.0,
+    ('T',  90) -> 0.0,
+    ('T', 180) -> 0.5,
+    ('Z',   0) -> 1.0,
+    ('Z', -90) -> 0.0,
+    ('Z',  90) -> 0.0,
+    ('Z', 180) -> 1.0)
+
+  def getDistanceFromPreferredSide(position: Position, width: Int): Double = {
+    val ((row, col), angle) = position
+    def distance(side: Double): Double = math.abs(col.toDouble - width.toDouble * side)
+    if (preferredSide contains (name, angle)) {
+      distance(preferredSide((name, angle)))
+    } else {
+      math.min(distance(1.0), distance(0.0))
+    }
+  }
 
   val blocks = {
     val indexes = string.zipWithIndex filter {_._1 == 'X'} map {_._2}
@@ -179,6 +211,8 @@ case class Metric(blocks: Set[(Int, Int)], positions: Set[((Int, Int), Int)], fi
 
   lazy val blockHeight = blocks.toList.map(_._1).sum
 
+  lazy val distanceFromPreferredSide = piece.getDistanceFromPreferredSide(positions.head, field.width)
+
   lazy val holeCount = {
     val colHoles = for (col <- 0 until field.width) yield {
       def empty(row: Int) = movedField.isEmpty((row, col))
@@ -245,7 +279,7 @@ object AiBlockBattle {
     'O' -> "XXXX",
     'S' -> " XXXX    ",
     'T' -> " X XXX   ",
-    'Z' -> "XX  XX   ") mapValues {new Piece(_)}
+    'Z' -> "XX  XX   ") map {case (name, string) => (name, new Piece(string, name))}
 
   def processLine(state: GameState, line: String): GameState = {
     val fields = line split ' '
@@ -272,7 +306,7 @@ object AiBlockBattle {
     val groupedBlocks = potentialBlocks groupBy {_._2} mapValues {_ map {_._1}}
     val validMoves = groupedBlocks filter {block => my_field.moveValid(block._1)}
     val metrics = validMoves map {case (blocks, positions) => new Metric(blocks, positions, my_field, piece, start, combo)}
-    val sortedMetrics = metrics.toArray.filterNot(_.lostGame).sortBy(-1 * _.blockHeight).sortBy(_.holeCount).sortBy(-1 * _.points)
+    val sortedMetrics = metrics.toArray.filterNot(_.lostGame).sortBy(_.distanceFromPreferredSide).sortBy(-1 * _.blockHeight).sortBy(_.holeCount).sortBy(-1 * _.points)
     val path = sortedMetrics.dropWhile(_.path.size == 0)
     if (path.isEmpty)
       println("no_moves")
