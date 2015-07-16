@@ -196,14 +196,13 @@ class MovedField(field: Field, blocks: Set[(Int, Int)]) {
   def lostGame: Boolean = cleared exists {_._1 < 0}
 }
 
-//TODO: Add horizontal gap width
 case class Metric(blocks: Set[(Int, Int)], positions: Set[((Int, Int), Int)], field: Field, piece: Piece, start: ((Int, Int), Int), combo: Int) {
   type Block = (Int, Int)
   type Position = (Block, Int) // Origin, angle
 
   override
   def toString: String = {
-    blockHeight.toString + " " + holeCount.toString + " " + lostGame.toString
+    blockHeight.toString + " " + holeCount.toString + " " + lostGame.toString + " " + chimneyCount.toString
   }
 
   private lazy val movedField = new MovedField(field, blocks)
@@ -211,6 +210,11 @@ case class Metric(blocks: Set[(Int, Int)], positions: Set[((Int, Int), Int)], fi
   lazy val blockHeight = blocks.toList.map(_._1).sum
 
   lazy val distanceFromPreferredSide = piece.getDistanceFromPreferredSide(positions.head, field.width)
+
+  lazy val chimneyCount = {
+    val blocks = for (row <- 0 until field.height; col <- 0 until field.width) yield (row, col)
+    blocks count {case (row, col) => movedField.isEmpty((row, col)) && !movedField.isEmpty((row,col-1)) && !movedField.isEmpty((row,col+1))}
+  }
 
   lazy val holeCount = {
     val colHoles = for (col <- 0 until field.width) yield {
@@ -305,7 +309,7 @@ object AiBlockBattle {
     val groupedBlocks = potentialBlocks groupBy {_._2} mapValues {_ map {_._1}}
     val validMoves = groupedBlocks filter {block => my_field.moveValid(block._1)}
     val metrics = validMoves map {case (blocks, positions) => new Metric(blocks, positions, my_field, piece, start, combo)}
-    val sortedMetrics = metrics.toArray.filterNot(_.lostGame).sortBy(_.distanceFromPreferredSide).sortBy(-1 * _.blockHeight).sortBy(_.holeCount).sortBy(-1 * _.points)
+    val sortedMetrics = metrics.toArray.filterNot(_.lostGame).sortBy(_.distanceFromPreferredSide).sortBy(-1 * _.blockHeight).sortBy(_.holeCount).sortBy(_.chimneyCount).sortBy(-1 * _.points)
     val path = sortedMetrics.dropWhile(_.path.size == 0)
     if (path.isEmpty)
       println("no_moves")
