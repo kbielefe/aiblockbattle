@@ -202,7 +202,6 @@ class MovedField(field: Field, blocks: Set[(Int, Int)]) {
 }
 
 //TODO:  Prefer not to stack on top of buried holes
-//TODO:  Check for bad end-game moves, blocks with row < 3
 case class Metric(blocks: Set[(Int, Int)], positions: Set[((Int, Int), Int)], field: Field, piece: Piece, start: ((Int, Int), Int), combo: Int) {
   type Block = (Int, Int)
   type Position = (Block, Int) // Origin, angle
@@ -220,10 +219,14 @@ case class Metric(blocks: Set[(Int, Int)], positions: Set[((Int, Int), Int)], fi
 
   lazy val chimneyCount = {
     val blocks = for (row <- 0 until field.height; col <- 0 until field.width) yield (row, col)
-    blocks count {case (row, col) => 
-      movedField.isEmpty((row, col)) && !movedField.isEmpty((row,col-1)) && !movedField.isEmpty((row,col+1)) &&
+    blocks count {case (row, col) => movedField.isEmpty((row, col)) &&
       movedField.isEmpty((row-1, col)) && !movedField.isEmpty((row-1,col-1)) && !movedField.isEmpty((row-1,col+1))
     }
+  }
+
+  lazy val endGameBlocks = {
+    val blocks = for (row <- 0 to 2; col <- 0 until field.width) yield (row, col)
+    blocks count {!movedField.isEmpty(_)}
   }
 
   lazy val holeCount = {
@@ -237,6 +240,29 @@ case class Metric(blocks: Set[(Int, Int)], positions: Set[((Int, Int), Int)], fi
   lazy val lostGame = movedField.lostGame
 
   lazy val path = {
+    def heuristic(start: Position, goal: Position): Double = {
+      import math._
+
+      val ((startX, startY), startAngle) = start
+      val ((goalX, goalY), goalAngle) = goal
+      val angleDiff = abs(AiBlockBattle.normalizeAngle(goalAngle - startAngle)) / 90
+      val diffX = (goalX - startX).toDouble
+      val diffY = (goalY - startY).toDouble
+
+      diffX * diffX + diffY * diffY + angleDiff.toDouble
+    }
+
+    def getNeighbors(field: Field, piece: Piece)(position: Position): Set[Position] = {
+      val ((row, col), angle) = position
+      val allNeighbors = Set(((row+1, col), angle),
+                             ((row, col-1), angle),
+                             ((row, col+1), angle),
+                             ((row, col), AiBlockBattle.normalizeAngle(angle - 90)),
+                             ((row, col), AiBlockBattle.normalizeAngle(angle + 90)))
+
+      allNeighbors filter {neighbor => field.moveValid(piece.getBlocksFromPosition(neighbor))}
+    }
+
     val aStar = new AStar(heuristic, getNeighbors(field, piece)_)
     val goals = positions.toArray.sortBy(position => math.abs(position._2)).iterator
     val paths = goals map {aStar.getPath(start, _)} dropWhile {_.isEmpty}
@@ -256,28 +282,6 @@ case class Metric(blocks: Set[(Int, Int)], positions: Set[((Int, Int), Int)], fi
       0
   }
 
-  private def heuristic(start: Position, goal: Position): Double = {
-    import math._
-
-    val ((startX, startY), startAngle) = start
-    val ((goalX, goalY), goalAngle) = goal
-    val angleDiff = abs(AiBlockBattle.normalizeAngle(goalAngle - startAngle)) / 90
-    val diffX = (goalX - startX).toDouble
-    val diffY = (goalY - startY).toDouble
-
-    diffX * diffX + diffY * diffY + angleDiff.toDouble
-  }
-
-  private def getNeighbors(field: Field, piece: Piece)(position: Position): Set[Position] = {
-    val ((row, col), angle) = position
-    val allNeighbors = Set(((row+1, col), angle),
-                           ((row, col-1), angle),
-                           ((row, col+1), angle),
-                           ((row, col), AiBlockBattle.normalizeAngle(angle - 90)),
-                           ((row, col), AiBlockBattle.normalizeAngle(angle + 90)))
-
-    allNeighbors filter {neighbor => field.moveValid(piece.getBlocksFromPosition(neighbor))}
-  }
 }
 
 object AiBlockBattle {
@@ -319,7 +323,7 @@ object AiBlockBattle {
     val groupedBlocks = potentialBlocks groupBy {_._2} mapValues {_ map {_._1}}
     val validMoves = groupedBlocks filter {block => my_field.moveValid(block._1)}
     val metrics = validMoves map {case (blocks, positions) => new Metric(blocks, positions, my_field, piece, start, combo)}
-    val sortedMetrics = metrics.toArray.filterNot(_.lostGame).sortBy(_.distanceFromPreferredSide).sortBy(-1 * _.blockHeight).sortBy(_.chimneyCount).sortBy(_.holeCount).sortBy(-1 * _.points)
+    val sortedMetrics = metrics.toArray.filterNot(_.lostGame).sortBy(_.distanceFromPreferredSide).sortBy(-1 * _.blockHeight).sortBy(_.chimneyCount).sortBy(_.endGameBlocks).sortBy(_.holeCount).sortBy(-1 * _.points)
     //sortedMetrics foreach Console.err.println
     val path = sortedMetrics.dropWhile(_.path.size == 0)
     if (path.isEmpty)
