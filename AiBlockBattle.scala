@@ -328,8 +328,8 @@ object AiBlockBattle {
       .sortBy(_.distanceFromPreferredSide)
       .sortBy(-1 * _.blockHeight)
       .sortBy(_.chimneyCount)
-      .sortBy(_.endGameBlocks)
       .sortBy(_.holeCount)
+      .sortBy(_.endGameBlocks)
       .sortBy(-1 * _.points)
 
     //sortedMetrics foreach Console.err.println
