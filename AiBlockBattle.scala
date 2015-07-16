@@ -323,7 +323,15 @@ object AiBlockBattle {
     val groupedBlocks = potentialBlocks groupBy {_._2} mapValues {_ map {_._1}}
     val validMoves = groupedBlocks filter {block => my_field.moveValid(block._1)}
     val metrics = validMoves map {case (blocks, positions) => new Metric(blocks, positions, my_field, piece, start, combo)}
-    val sortedMetrics = metrics.toArray.filterNot(_.lostGame).sortBy(_.distanceFromPreferredSide).sortBy(-1 * _.blockHeight).sortBy(_.chimneyCount).sortBy(_.endGameBlocks).sortBy(_.holeCount).sortBy(-1 * _.points)
+    val sortedMetrics = metrics.toArray
+      .filterNot(_.lostGame)
+      .sortBy(_.distanceFromPreferredSide)
+      .sortBy(-1 * _.blockHeight)
+      .sortBy(_.chimneyCount)
+      .sortBy(_.endGameBlocks)
+      .sortBy(_.holeCount)
+      .sortBy(-1 * _.points)
+
     //sortedMetrics foreach Console.err.println
     val path = sortedMetrics.dropWhile(_.path.size == 0)
     if (path.isEmpty)
