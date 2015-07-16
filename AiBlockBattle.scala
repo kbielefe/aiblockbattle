@@ -187,7 +187,7 @@ class MovedField(field: Field, blocks: Set[(Int, Int)]) {
       (offset, result ++ (combined filter {_._1 == row} map {case (x, y) => (x + offset, y)}))
   }
 
-  val (clearCount, cleared) = (field.height - 1 to 0 by -1).foldLeft((0, Set[Block]()))(removeRow)
+  val (clearCount, cleared) = (field.height - 1 to -4 by -1).foldLeft((0, Set[Block]()))(removeRow)
 
   def isEmpty(block: Block): Boolean = {
     !(cleared contains block) && !field.isSolidBlock(block)
@@ -196,8 +196,7 @@ class MovedField(field: Field, blocks: Set[(Int, Int)]) {
   def lostGame: Boolean = cleared exists {_._1 < 0}
 }
 
-//TODO:  Add distance from preferred side for piece and position
-//       Add horizontal gap width
+//TODO: Add horizontal gap width
 case class Metric(blocks: Set[(Int, Int)], positions: Set[((Int, Int), Int)], field: Field, piece: Piece, start: ((Int, Int), Int), combo: Int) {
   type Block = (Int, Int)
   type Position = (Block, Int) // Origin, angle
