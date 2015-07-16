@@ -213,7 +213,10 @@ case class Metric(blocks: Set[(Int, Int)], positions: Set[((Int, Int), Int)], fi
 
   lazy val chimneyCount = {
     val blocks = for (row <- 0 until field.height; col <- 0 until field.width) yield (row, col)
-    blocks count {case (row, col) => movedField.isEmpty((row, col)) && !movedField.isEmpty((row,col-1)) && !movedField.isEmpty((row,col+1))}
+    blocks count {case (row, col) => 
+      movedField.isEmpty((row, col)) && !movedField.isEmpty((row,col-1)) && !movedField.isEmpty((row,col+1)) &&
+      movedField.isEmpty((row-1, col)) && !movedField.isEmpty((row-1,col-1)) && !movedField.isEmpty((row-1,col+1))
+    }
   }
 
   lazy val holeCount = {
