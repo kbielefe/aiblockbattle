@@ -23,6 +23,10 @@ abstract class Minimax[Node, Score] {
     }
 
     def lte(other: Infinite): Boolean
+
+    def getScore: Score = {
+      throw new Exception("No result found")
+    }
   }
 
   object Infinity extends Infinite {
@@ -39,6 +43,8 @@ abstract class Minimax[Node, Score] {
       case NegativeInfinity   => false
       case Finite(otherScore) => score == otherScore || lt(score, otherScore)
     }
+
+    override def getScore: Score = score
   }
 
   @tailrec
@@ -76,5 +82,10 @@ abstract class Minimax[Node, Score] {
     val initialValue = if (maximizing) NegativeInfinity else Infinity
 
     childLoop(children, initialValue, alpha, beta, depth, maximizing, nextMax)
+  }
+
+  //TODO:  Add a time cutoff
+  def search(node: Node, depth: Int): Score = {
+    alphabeta(node, depth, NegativeInfinity, Infinity, true).getScore
   }
 }
