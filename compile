@@ -1,0 +1,4 @@
+#!/bin/bash
+
+mkdir -p build
+scalac -cp scalatest.jar -d build *.scala tests/*.scala
