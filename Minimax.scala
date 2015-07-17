@@ -1,69 +1,80 @@
-class Minimax[Node](lt: (Node, Node) => Boolean, terminal: Node => Boolean, heuristic: Node => Score) {
-  sealed abstract class Score {
-    def <(other: Score): Boolean
+import scala.annotation.tailrec
 
-    def <=(other: Score): Boolean = {
-      this < other || this == other
-    }
+abstract class Minimax[Node, Score] {
+  def lt(left: Score, right: Score): Boolean
+  def terminal(node: Node): Boolean
+  def heuristic(node: Node): Infinite
+  def getChildren(node: Node): List[Node]
+  def nextLevelMaximizes(node: Node): Boolean
 
-    def >(other: Score): Boolean = {
-      !(this <= other)
-    }
-
-    def >=(other: Score): Boolean = {
-      !(this < other)
-    }
-
-    def min(other: Score): Score = {
-      if (this < other)
-        this
-      else
-        other
-    }
-
-    def max(other: Score): Score = {
-      if (this < other)
+  sealed abstract class Infinite {
+    def max(other: Infinite): Infinite = {
+      if (this.lte(other))
         other
       else
         this
     }
 
-    def   <(other: Node): Boolean = this  < FiniteScore(other)
-    def  <=(other: Node): Boolean = this <= FiniteScore(other)
-    def   >(other: Node): Boolean = this  > FiniteScore(other)
-    def  >=(other: Node): Boolean = this >= FiniteScore(other)
-    def min(other: Node): Score = min(FiniteScore(other))
-    def max(other: Node): Score = max(FiniteScore(other))
+    def min(other: Infinite): Infinite = {
+      if (this.lte(other))
+        this
+      else
+        other
+    }
 
-    def getNode: Node = {
-      throw new Exception("Doesn't have a node")
+    def lte(other: Infinite): Boolean
+  }
+
+  object Infinity extends Infinite {
+    def lte(other: Infinite): Boolean = false
+  }
+
+  object NegativeInfinity extends Infinite {
+    def lte(other: Infinite): Boolean = true
+  }
+
+  case class Finite(score: Score) extends Infinite {
+    def lte(other: Infinite): Boolean = other match {
+      case Infinity           => true
+      case NegativeInfinity   => false
+      case Finite(otherScore) => score == otherScore || lt(score, otherScore)
     }
   }
 
-  object Infinity extends Score {
-    def <(other: Score): Boolean = false
+  @tailrec
+  private def childLoop(
+    children:   List[Node],
+    result:     Infinite,
+    alpha:      Infinite,
+    beta:       Infinite,
+    depth:      Int,
+    maximizing: Boolean,
+    nextMax:    Boolean): Infinite = {
+
+    if (children.isEmpty)
+      return result
+
+    val child :: tail = children
+    val childResult = alphabeta(child, depth-1, alpha, beta, nextMax)
+
+    val newResult = if (maximizing) result.max(childResult) else result.min(childResult)
+    val newAlpha  = if (maximizing) alpha.max(newResult)    else alpha
+    val newBeta   = if (maximizing) beta                    else beta.min(newResult)
+
+    if (newBeta.lte(newAlpha))
+      return newResult
+
+    childLoop(tail, newResult, newAlpha, beta, depth, maximizing, nextMax)
   }
 
-  object NegativeInfinity extends Score {
-    def <(other: Score): Boolean = other match {
-      case NegativeInfinity => false
-      case _                => true
-    }
-  }
-
-  case class FiniteScore(node: Node) extends Score {
-    def <(other: Score): Boolean = other match {
-      case NegativeInfinity => false
-      case Infinity         => true
-      case FiniteScore(otherNode) => lt(node, otherNode)
-    }
-
-    override def getNode: Node = node
-  }
-
-  def alphabeta(node: Node, depth: Int, alpha: Score, beta: Score, maximizing: Boolean): Score = {
+  private def alphabeta(node: Node, depth: Int, alpha: Infinite, beta: Infinite, maximizing: Boolean): Infinite = {
     if (depth == 0 || terminal(node))
       return heuristic(node)
-    Infinity
+
+    val children = getChildren(node)
+    val nextMax = nextLevelMaximizes(node)
+    val initialValue = if (maximizing) NegativeInfinity else Infinity
+
+    childLoop(children, initialValue, alpha, beta, depth, maximizing, nextMax)
   }
 }
