@@ -37,9 +37,10 @@ case class Metric(blocks: Set[(Int, Int)], positions: Set[((Int, Int), Int)], fi
     val before = for (col <- 0 until spawnStartCol) yield (x-1, col)
     val underSpawn = for (col <- spawnStartCol to spawnEndCol) yield (x, col)
     val after = for (col <- spawnEndCol+1 until field.width) yield (x-1, col)
-    (before count {!movedField.isEmpty(_)}) +
-      (underSpawn count {!movedField.isEmpty(_)}) +
-      (after count {!movedField.isEmpty(_)})
+    val anyExists = (before exists {!movedField.isEmpty(_)}) || 
+      (underSpawn exists {!movedField.isEmpty(_)}) ||
+      (after exists {!movedField.isEmpty(_)})
+    if (anyExists) 1 else 0
   }
 
   private lazy val holes = {
