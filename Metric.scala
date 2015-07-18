@@ -1,4 +1,11 @@
-case class Metric(blocks: Set[(Int, Int)], positions: Set[((Int, Int), Int)], field: Field, piece: Piece, start: ((Int, Int), Int), combo: Int) {
+case class Metric(
+  blocks: Set[(Int, Int)],
+  positions: Set[((Int, Int), Int)],
+  field: Field,
+  piece: Piece,
+  start: ((Int, Int), Int),
+  combo: Int) {
+
   type Block = (Int, Int)
   type Position = (Block, Int) // Origin, angle
 
