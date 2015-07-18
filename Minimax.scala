@@ -5,7 +5,6 @@ abstract class Minimax[Node, Score] {
   def terminal(node: Node): Boolean
   def heuristic(node: Node): Infinite
   def getChildren(node: Node): List[Node]
-  def nextLevelMaximizes(node: Node): Boolean
 
   sealed abstract class Infinite {
     def max(other: Infinite): Infinite = {
@@ -54,14 +53,13 @@ abstract class Minimax[Node, Score] {
     alpha:      Infinite,
     beta:       Infinite,
     depth:      Int,
-    maximizing: Boolean,
-    nextMax:    Boolean): Infinite = {
+    maximizing: Boolean): Infinite = {
 
     if (children.isEmpty)
       return result
 
     val child :: tail = children
-    val childResult = alphabeta(child, depth-1, alpha, beta, nextMax)
+    val childResult = alphabeta(child, depth-1, alpha, beta, !maximizing)
 
     val newResult = if (maximizing) result.max(childResult) else result.min(childResult)
     val newAlpha  = if (maximizing) alpha.max(newResult)    else alpha
@@ -70,7 +68,7 @@ abstract class Minimax[Node, Score] {
     if (newBeta.lte(newAlpha))
       return newResult
 
-    childLoop(tail, newResult, newAlpha, beta, depth, maximizing, nextMax)
+    childLoop(tail, newResult, newAlpha, beta, depth, maximizing)
   }
 
   private def alphabeta(node: Node, depth: Int, alpha: Infinite, beta: Infinite, maximizing: Boolean): Infinite = {
@@ -78,10 +76,9 @@ abstract class Minimax[Node, Score] {
       return heuristic(node)
 
     val children = getChildren(node)
-    val nextMax = nextLevelMaximizes(node)
     val initialValue = if (maximizing) NegativeInfinity else Infinity
 
-    childLoop(children, initialValue, alpha, beta, depth, maximizing, nextMax)
+    childLoop(children, initialValue, alpha, beta, depth, maximizing)
   }
 
   //TODO:  Add a time cutoff

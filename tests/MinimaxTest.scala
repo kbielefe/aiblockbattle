@@ -7,7 +7,7 @@ object testMinimax extends Minimax[Int, Int] {
   def nextLevelMaximizes(node: Int): Boolean = node != 2 && node != 3
 
   def heuristic(node: Int): Infinite = {
-    if (node == 12 || node == 10 || node == 8)
+    if (List(4, 8, 9) exists {node == _})
       throw new Exception("Did not prune")
 
     Finite(node)
@@ -16,15 +16,15 @@ object testMinimax extends Minimax[Int, Int] {
 
 class MinimaxTest extends FlatSpec with Matchers {
   "Minimax" should "find the best score" in {
-    testMinimax.search(1, 3) should be (14)
+    testMinimax.search(1, 3) should be (13)
   }
 
   it should "limit the depth" in {
-    testMinimax.search(1, 10) should be (14)
+    testMinimax.search(1, 10) should be (13)
   }
 
   it should "respect the passed in depth" in {
-    testMinimax.search(1, 2) should be (7)
+    testMinimax.search(1, 2) should be (6)
   }
 
   it should "prune" in {

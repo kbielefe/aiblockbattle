@@ -106,4 +106,33 @@ case class Metric(blocks: Set[(Int, Int)], positions: Set[((Int, Int), Int)], fi
     else
       0
   }
+
+  def <(other: Metric): Boolean = {
+    def boolField(f: Metric => Boolean): Metric => Int = {
+      x => if (f(x)) 1 else 0
+    }
+
+    def largerIsBetter(f: Metric => Int): Metric => Int = {
+      x => -1 * f(x)
+    }
+
+    val priorities: Seq[Metric => Int] = Seq(
+      boolField(_.lostGame),
+      _.loseInX(1),
+      largerIsBetter(_.points),
+      _.loseInX(2),
+      _.loseInX(3),
+      _.holeCount,
+      _.chimneyCount,
+      largerIsBetter(_.blockHeight),
+      _.holeDepth,
+      _.distanceFromPreferredSide.toInt)
+
+    val unequal = priorities dropWhile {f => f(this) == f(other)}
+    if (unequal.isEmpty)
+      return false
+
+    val f = unequal.head
+    f(this) > f(other) // Inverted because for most, larger is worse
+  }
 }
