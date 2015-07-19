@@ -1,42 +1,44 @@
-class Field(string: String) {
+class Field(blocks: Set[(Int, Int)], width: Int, height: Int) {
   type Block = (Int, Int)
 
-  private val array = string split ';' map {_ split ',' map {_.toInt}}
-  val height = array.size
-  val width = array(0).size
-
-  def isEmpty(block: Block): Boolean = {
-    val (row, col) = block
-
-    if (row < 0)
-      return true
-
-    if (row >= height || col < 0 || col >= width)
-      return false
-
-    val cell = array(row)(col)
-    cell == 0 || cell == 1
+  def empty(block: Block): Boolean = {
+    inside(block) && !(blocks contains block)
   }
 
-  def isClearableBlock(block: Block): Boolean = {
+  def inside(block: Block): Boolean = {
     val (row, col) = block
-
-    if (row < 0 || row >= height || col < 0 || col >= width)
-      return false
-
-    array(row)(col) == 2
-  }
-
-  def isSolidBlock(block: Block): Boolean = {
-    val (row, col) = block
-
-    if (row < 0 || row >= height || col < 0 || col >= width)
-      return false
-
-    array(row)(col) == 3
+    row < height && col >= 0 && col < width
   }
 
   def moveValid(move: Set[Block]): Boolean = {
-    move forall isEmpty
+    move forall empty
+  }
+
+  def +(newBlocks: Set[Block]): (Field, Int) = {
+    val combined = blocks ++ newBlocks
+    val groupedByRow = combined groupBy {_._1}
+    val (cleared, kept) = groupedByRow partition {_._2.size == width}
+
+    val clearedRows = cleared.keySet
+    def clearedRowsBelow(row: Int): Int = clearedRows count {_ < row}
+
+    def moveDown(block: Block): Block = {
+      val (row, col) = block
+      (row - clearedRowsBelow(row), col)
+    }
+
+    val moved = kept.valuesIterator flatMap {_ map moveDown}
+
+    (new Field(moved.toSet, width, height), clearedRows.size)
+  }
+}
+
+object Field {
+  def apply(string: String): Field = {
+    val array = string split ';' map {_ split ',' map {_.toInt}}
+    val width = array(0).size
+    val height = array count {_(0) != 3}
+    val blocks = for (row <- 0 until height; col <- 0 until width; if array(row)(col) == 2) yield (height-row-1, col)
+    new Field(blocks.toSet, width, height)
   }
 }
