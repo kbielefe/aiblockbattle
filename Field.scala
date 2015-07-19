@@ -20,6 +20,9 @@ class Field(blocks: Set[(Int, Int)], width: Int, height: Int) {
     val (cleared, kept) = groupedByRow partition {_._2.size == width}
 
     val clearedRows = cleared.keySet
+    if (clearedRows.size == 0)
+      return (new Field(combined, width, height), 0)
+
     def clearedRowsBelow(row: Int): Int = clearedRows count {_ < row}
 
     def moveDown(block: Block): Block = {
