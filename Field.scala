@@ -25,12 +25,12 @@ class Field(blocks: Set[(Int, Int)], width: Int, height: Int) {
 
     def clearedRowsBelow(row: Int): Int = clearedRows count {_ < row}
 
-    def moveDown(block: Block): Block = {
-      val (row, col) = block
-      (row - clearedRowsBelow(row), col)
+    def moveDown(row: Int): Set[Block] = {
+      val newRow = row - clearedRowsBelow(row)
+      kept(row) map {case (row, col) => (newRow, col)}
     }
 
-    val moved = kept.valuesIterator flatMap {_ map moveDown}
+    val moved = kept.keysIterator flatMap moveDown
 
     (new Field(moved.toSet, width, height), clearedRows.size)
   }
