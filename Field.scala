@@ -14,25 +14,29 @@ class Field(blocks: Set[(Int, Int)], width: Int, height: Int) {
     move forall empty
   }
 
-  def +(newBlocks: Set[Block]): (Field, Int) = {
-    val combined = blocks ++ newBlocks
+  private def getClearedRows(combined: Set[Block]): (Set[Int], Map[Int, Set[Block]]) = {
     val groupedByRow = combined groupBy {_._1}
     val (cleared, kept) = groupedByRow partition {_._2.size == width}
+    (cleared.keySet, kept)
+  }
 
-    val clearedRows = cleared.keySet
-    if (clearedRows.size == 0)
-      return (new Field(combined, width, height), 0)
-
-    def clearedRowsBelow(row: Int): Int = clearedRows count {_ < row}
-
+  private def getMovedRows(cleared: Set[Int], kept: Map[Int, Set[Block]]): Set[Block] = {
     def moveDown(row: Int): Set[Block] = {
-      val newRow = row - clearedRowsBelow(row)
+      val newRow = row - (cleared count {_ < row})
       kept(row) map {case (row, col) => (newRow, col)}
     }
 
-    val moved = kept.keysIterator flatMap moveDown
+    (kept.keysIterator flatMap moveDown).toSet
+  }
 
-    (new Field(moved.toSet, width, height), clearedRows.size)
+  def +(piece: Set[Block]): (Field, Int) = {
+    val combined = blocks ++ piece
+
+    val (cleared, kept) = getClearedRows(combined)
+    val clearCount = cleared.size
+    val newBlocks = if (clearCount == 0) combined else getMovedRows(cleared, kept)
+
+    (new Field(newBlocks, width, height), clearCount)
   }
 }
 
