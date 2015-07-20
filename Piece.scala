@@ -38,7 +38,7 @@ class Piece(string: String, name: Char) {
 
   val blocks = {
     val indexes = string.zipWithIndex filter {_._1 == 'X'} map {_._2}
-    val indexSeq = indexes map {index => (index / width, index % width)}
+    val indexSeq = indexes map {index => (width - 1 - index / width, index % width)}
     indexSeq.toSet
   }
 
@@ -67,12 +67,12 @@ class Piece(string: String, name: Char) {
 
   private def getBoundariesFromAngle(angle: Int): Iterable[Position] = {
     val grouped = getBlocksFromAngle(angle) groupBy {_._2}
-    grouped.values map {col => (col maxBy {_._1}, angle)}
+    grouped.values map {col => (col minBy {_._1}, angle)}
   }
 
-  private def rotateRight(block: Block): Block = (block._2, width - block._1 - 1)
+  private def rotateLeft(block: Block): Block = (block._2, width - block._1 - 1)
 
-  private def rotateLeft(block: Block): Block = (width - block._2 - 1, block._1)
+  private def rotateRight(block: Block): Block = (width - block._2 - 1, block._1)
 
   private def flip(block: Block): Block = (width - block._1 - 1, width - block._2 - 1)
 }

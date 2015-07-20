@@ -29,7 +29,7 @@ object AiBlockBattle {
     val combo = state(my_bot + "/combo").toInt
     val this_piece_type = state("game/this_piece_type")(0)
     val this_piece_position = state("game/this_piece_position") split ','
-    val start = ((this_piece_position(1).toInt, this_piece_position(0).toInt), 0)
+    val start = ((my_field.height - this_piece_position(1).toInt, this_piece_position(0).toInt), 0)
     val boundaries = my_field.getBoundaries
     val piece = pieces(this_piece_type)
     val potentialPositions = piece.getPositionsFromBoundaries(boundaries).toSet
@@ -39,7 +39,7 @@ object AiBlockBattle {
     val metrics = validMoves map {case (blocks, positions) => new Metric(blocks, positions, my_field, piece, start, combo)}
     val sortedMetrics = metrics.toArray.sortWith((left, right) => right < left)
 
-    sortedMetrics foreach Console.err.println
+    //sortedMetrics foreach Console.err.println
 
     val path = sortedMetrics.dropWhile(_.path.size == 0)
     if (path.isEmpty)

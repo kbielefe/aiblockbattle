@@ -10,14 +10,14 @@ class MockMetric(
          new Piece("", 'I'),
          ((0, 0), 0),
          0) {
-  override def loseInX(x: Int): Int = loseInOffset
+  override def loseInX(x: Int): Boolean = x >= loseInOffset
   override lazy val lostGame: Boolean = lostGameMock
 }
 
 class BlockMinimaxTest extends FlatSpec with Matchers {
   "Less than" should "prioritize on lost game" in {
-    val lost    = new MockMetric(0, true)
-    val notLost = new MockMetric(1, false)
+    val lost    = new MockMetric(1, true)
+    val notLost = new MockMetric(2, false)
     BlockMinimax.lt(lost, notLost) shouldBe true
   }
 }
