@@ -25,12 +25,12 @@ object AiBlockBattle {
 
   def outputMove(state: GameState, time: Int): Unit = {
     val my_bot = state("your_bot")
-    val my_field = new Field(state(my_bot + "/field"))
+    val my_field = Field(state(my_bot + "/field"))
     val combo = state(my_bot + "/combo").toInt
     val this_piece_type = state("game/this_piece_type")(0)
     val this_piece_position = state("game/this_piece_position") split ','
     val start = ((this_piece_position(1).toInt, this_piece_position(0).toInt), 0)
-    val boundaries = getBoundaries(my_field)
+    val boundaries = my_field.getBoundaries
     val piece = pieces(this_piece_type)
     val potentialPositions = piece.getPositionsFromBoundaries(boundaries).toSet
     val potentialBlocks = potentialPositions map {position => (position, piece.getBlocksFromPosition(position))}
@@ -48,17 +48,6 @@ object AiBlockBattle {
       Console.err.println(path.head.positions.head)
       println(pathToMoves(path.head.path).mkString(","))
     }
-  }
-
-  def getBoundaries(field: Field): IndexedSeq[Block] = {
-    def isBoundary(block: Block): Boolean = {
-      val (row, col) = block
-      val below = (row+1, col)
-      !field.isEmpty(below) && field.isEmpty(block)
-    }
-
-    val blocks = for (row <- 0 until field.height; col <- 0 until field.width) yield (row, col)
-    blocks filter isBoundary
   }
 
   def normalizeAngle(angle: Int): Int = {

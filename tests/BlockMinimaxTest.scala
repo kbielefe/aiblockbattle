@@ -6,7 +6,7 @@ class MockMetric(
   extends 
   Metric(Set[(Int, Int)](),
          Set[((Int, Int), Int)](),
-         new Field("0,0;0,0"),
+         Field("0,0;0,0"),
          new Piece("", 'I'),
          ((0, 0), 0),
          0) {

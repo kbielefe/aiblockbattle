@@ -14,7 +14,7 @@ case class Metric(
     blockHeight + " " + holeCount + " " + lostGame + " " + chimneyCount + " " + holeDepth + " " + positions.head
   }
 
-  private lazy val movedField = new MovedField(field, blocks)
+  private lazy val (movedField, clearCount) = field + blocks
 
   lazy val blockHeight = blocks.toList.map(_._1).sum
 
@@ -22,14 +22,9 @@ case class Metric(
 
   lazy val chimneyCount = {
     val blocks = for (row <- 0 until field.height; col <- 0 until field.width) yield (row, col)
-    blocks count {case (row, col) => movedField.isEmpty((row, col)) &&
-      movedField.isEmpty((row-1, col)) && !movedField.isEmpty((row-1,col-1)) && !movedField.isEmpty((row-1,col+1))
+    blocks count {case (row, col) => movedField.empty((row, col)) &&
+      movedField.empty((row-1, col)) && !movedField.empty((row-1,col-1)) && !movedField.empty((row-1,col+1))
     }
-  }
-
-  lazy val endGameBlocks = {
-    val blocks = for (row <- 0 to 2; col <- 0 until field.width) yield (row, col)
-    blocks count {!movedField.isEmpty(_)}
   }
 
   private val spawnStartCol = (field.width - 4) / 2
@@ -105,10 +100,9 @@ case class Metric(
   }
 
   lazy val points = {
-    val count = movedField.clearCount 
-    if (count == 4)
+    if (clearCount == 4)
       8
-    else if (count > 0)
+    else if (clearCount > 0)
       count + combo
     else
       0

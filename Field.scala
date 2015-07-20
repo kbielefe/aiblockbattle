@@ -1,4 +1,4 @@
-class Field(blocks: Set[(Int, Int)], width: Int, height: Int) {
+class Field(val blocks: Set[(Int, Int)], val width: Int, val height: Int) {
   type Block = (Int, Int)
 
   def empty(block: Block): Boolean = {
@@ -7,7 +7,7 @@ class Field(blocks: Set[(Int, Int)], width: Int, height: Int) {
 
   def inside(block: Block): Boolean = {
     val (row, col) = block
-    row < height && col >= 0 && col < width
+    row >= 0 && col >= 0 && col < width
   }
 
   def moveValid(move: Set[Block]): Boolean = {
@@ -37,6 +37,19 @@ class Field(blocks: Set[(Int, Int)], width: Int, height: Int) {
     val newBlocks = if (clearCount == 0) combined else getMovedRows(cleared, kept)
 
     (new Field(newBlocks, width, height), clearCount)
+  }
+
+  private def above(block: Block): Block = block match {
+    case (row, col) => (row+1, col)
+  }
+
+  private def below(block: Block): Block = block match {
+    case (row, col) => (row-1, col)
+  }
+
+  def getBoundaries: Set[Block] = {
+    val bottomBlocks = for (col <- 0 until width) yield (0, col)
+    (blocks map above) ++ (bottomBlocks) filter empty
   }
 }
 
