@@ -36,6 +36,21 @@ class Piece(string: String, name: Char) {
     }
   }
 
+  private val spawnRow = Map(
+    'I' -> -3,
+    'J' -> -2,
+    'L' -> -2,
+    'O' -> -1,
+    'S' -> -2,
+    'T' -> -2,
+    'Z' -> -2)(name)
+
+  def getExpectedSpawnPosition(field: Field): Position = {
+    val row = spawnRow + field.height
+    val col = (field.width - width) / 2
+    ((row, col), 0)
+  }
+
   val blocks = {
     val indexes = string.zipWithIndex filter {_._1 == 'X'} map {_._2}
     val indexSeq = indexes map {index => (width - 1 - index / width, index % width)}
