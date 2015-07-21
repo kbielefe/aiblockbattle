@@ -96,7 +96,7 @@ case class Metric(
     if (paths.hasNext)
       paths.next()
     else
-      List[Position]()
+      List.empty[Position]
   }
 
   lazy val points = {
@@ -118,6 +118,7 @@ case class Metric(
     }
 
     val priorities: Seq[Metric => Int] = Seq(
+      boolField(_.path.isEmpty), // TODO:  Make general move valid
       boolField(_.lostGame),
       boolField(_.loseInX(1)),
       largerIsBetter(_.points),

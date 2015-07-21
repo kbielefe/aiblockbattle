@@ -24,30 +24,13 @@ object AiBlockBattle {
   }
 
   def outputMove(state: GameState, time: Int): Unit = {
-    val my_bot = state("your_bot")
-    val my_field = Field(state(my_bot + "/field"))
-    val combo = state(my_bot + "/combo").toInt
-    val this_piece_type = state("game/this_piece_type")(0)
-    val this_piece_position = state("game/this_piece_position") split ','
-    val piece = pieces(this_piece_type)
+    val root = new RootNode(state)
+    val path = BlockMinimax.search(root, 1).path
 
-    val start = ((my_field.height - this_piece_position(1).toInt - piece.width, this_piece_position(0).toInt), 0)
-    val boundaries = my_field.getBoundaries
-    val potentialPositions = piece.getPositionsFromBoundaries(boundaries).toSet
-    val potentialBlocks = potentialPositions map {position => (position, piece.getBlocksFromPosition(position))}
-    val groupedBlocks = potentialBlocks groupBy {_._2} mapValues {_ map {_._1}}
-    val validMoves = groupedBlocks filter {block => my_field.moveValid(block._1)}
-    val metrics = validMoves map {case (blocks, positions) => new Metric(blocks, positions, my_field, piece, start, combo)}
-    val sortedMetrics = metrics.toArray.sortWith((left, right) => right < left)
-
-    //sortedMetrics foreach Console.err.println
-
-    val path = sortedMetrics.dropWhile(_.path.size == 0)
     if (path.isEmpty)
       println("no_moves")
     else {
-      Console.err.println(path.head.positions.head)
-      println(pathToMoves(path.head.path).mkString(","))
+      println(pathToMoves(path).mkString(","))
     }
   }
 
@@ -89,6 +72,6 @@ object AiBlockBattle {
 
   def main(args: Array[String]) {
     val lines = io.Source.stdin.getLines
-    val state = lines.foldLeft(Map[String, String]())(processLine)
+    val state = lines.foldLeft(Map.empty[String, String])(processLine)
   }
 }
