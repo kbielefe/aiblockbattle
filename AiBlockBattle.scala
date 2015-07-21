@@ -29,9 +29,10 @@ object AiBlockBattle {
     val combo = state(my_bot + "/combo").toInt
     val this_piece_type = state("game/this_piece_type")(0)
     val this_piece_position = state("game/this_piece_position") split ','
-    val start = ((my_field.height - this_piece_position(1).toInt, this_piece_position(0).toInt), 0)
-    val boundaries = my_field.getBoundaries
     val piece = pieces(this_piece_type)
+
+    val start = ((my_field.height - this_piece_position(1).toInt - piece.width, this_piece_position(0).toInt), 0)
+    val boundaries = my_field.getBoundaries
     val potentialPositions = piece.getPositionsFromBoundaries(boundaries).toSet
     val potentialBlocks = potentialPositions map {position => (position, piece.getBlocksFromPosition(position))}
     val groupedBlocks = potentialBlocks groupBy {_._2} mapValues {_ map {_._1}}
