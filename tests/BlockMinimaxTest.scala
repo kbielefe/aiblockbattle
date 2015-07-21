@@ -9,7 +9,8 @@ class MockMetric(
          Field("0,0;0,0"),
          new Piece("", 'I'),
          ((0, 0), 0),
-         0) {
+         0,
+         List.empty[List[((Int, Int), Int)]]) {
   override def loseInX(x: Int): Boolean = x >= loseInOffset
   override lazy val lostGame: Boolean = lostGameMock
 }

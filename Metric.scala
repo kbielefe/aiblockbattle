@@ -4,7 +4,8 @@ case class Metric(
   field: Field,
   piece: Piece,
   start: ((Int, Int), Int),
-  combo: Int) {
+  combo: Int,
+  val parentPaths: List[List[((Int, Int), Int)]]) {
 
   type Block = (Int, Int)
   type Position = (Block, Int) // Origin, angle
@@ -14,7 +15,9 @@ case class Metric(
     blockHeight + " " + holeCount + " " + lostGame + " " + chimneyCount + " " + holeDepth + " " + positions.head
   }
 
-  private lazy val (movedField, clearCount) = field + blocks
+  lazy val (movedField, clearCount) = field + blocks
+
+  lazy val newCombo = if (clearCount > 0) 1 + combo else 0
 
   private def blocksInRegion(top: Int, left: Int, bottom: Int, right: Int): Boolean = {
     movedField.blocks exists {case (row, col) => row <= top && row >= bottom && col >= left && col <= right}

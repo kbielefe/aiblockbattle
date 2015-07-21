@@ -16,9 +16,9 @@ object AiBlockBattle {
 
   def outputMove(state: GameState, time: Int): Unit = {
     val root = new RootNode(state)
-    val metric = BlockMinimax.search(root, 1)
+    val metric = BlockMinimax.search(root, 3)
     //Console.err.println(metric)
-    val path = metric.path
+    val path = metric.parentPaths.last
 
     if (path.isEmpty)
       println("no_moves")
