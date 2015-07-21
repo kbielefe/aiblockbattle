@@ -40,7 +40,7 @@ object AiBlockBattle {
     val metrics = validMoves map {case (blocks, positions) => new Metric(blocks, positions, my_field, piece, start, combo)}
     val sortedMetrics = metrics.toArray.sortWith((left, right) => right < left)
 
-    sortedMetrics foreach Console.err.println
+    //sortedMetrics foreach Console.err.println
 
     val path = sortedMetrics.dropWhile(_.path.size == 0)
     if (path.isEmpty)

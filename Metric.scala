@@ -123,6 +123,7 @@ case class Metric(
       largerIsBetter(_.points),
       boolField(_.loseInX(2)),
       boolField(_.loseInX(3)),
+      boolField(_.chimneyCount > 6),
       _.holeCount,
       _.chimneyCount,
       _.blockHeight,
