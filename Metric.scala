@@ -20,7 +20,7 @@ case class Metric(
     movedField.blocks exists {case (row, col) => row <= top && row >= bottom && col >= left && col <= right}
   }
 
-  lazy val blockHeight = blocks.toList.map(_._1).sum
+  lazy val blockHeight = blocks.map(_._1).sum
 
   lazy val distanceFromPreferredSide = piece.getDistanceFromPreferredSide(positions.head, field.width)
 
@@ -44,7 +44,7 @@ case class Metric(
   private lazy val holes = {
     val colHoles = for (col <- 0 until field.width) yield {
       def empty(row: Int) = movedField.empty((row, col))
-      (0 until field.height) dropWhile empty filter empty map {(_, col)}
+      (movedField.height-1 to 0 by -1) dropWhile empty filter empty map {(_, col)}
     }
     colHoles.flatten
   }
