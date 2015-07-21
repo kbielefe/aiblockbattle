@@ -29,6 +29,7 @@ class RootNode(state: Map[String, String]) extends Node {
     val validMoves = groupedBlocks filter {block => field.moveValid(block._1)}
     val metrics = validMoves map {case (blocks, positions) => new Metric(blocks, positions, field, piece, start, combo)}
     val sortedMetrics = metrics.toArray.sortWith((left, right) => right < left)
+    //sortedMetrics foreach Console.err.println
     val sortedNodes = sortedMetrics map {new FirstLevelNode(_)}
     sortedNodes.toList
   }

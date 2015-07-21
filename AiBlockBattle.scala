@@ -3,15 +3,6 @@ object AiBlockBattle {
   type Block = (Int, Int)
   type Position = (Block, Int) // Origin, angle
 
-  val pieces = Map(
-    'I' -> "    XXXX        ",
-    'J' -> "X  XXX   ",
-    'L' -> "  XXXX   ",
-    'O' -> "XXXX",
-    'S' -> " XXXX    ",
-    'T' -> " X XXX   ",
-    'Z' -> "XX  XX   ") map {case (name, string) => (name, new Piece(string, name))}
-
   def processLine(state: GameState, line: String): GameState = {
     val fields = line split ' '
 
@@ -25,7 +16,9 @@ object AiBlockBattle {
 
   def outputMove(state: GameState, time: Int): Unit = {
     val root = new RootNode(state)
-    val path = BlockMinimax.search(root, 1).path
+    val metric = BlockMinimax.search(root, 1)
+    //Console.err.println(metric)
+    val path = metric.path
 
     if (path.isEmpty)
       println("no_moves")

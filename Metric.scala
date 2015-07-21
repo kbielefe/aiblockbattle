@@ -20,7 +20,8 @@ case class Metric(
     movedField.blocks exists {case (row, col) => row <= top && row >= bottom && col >= left && col <= right}
   }
 
-  lazy val blockHeight = blocks.map(_._1).sum
+  // Need toList to avoid merging duplicate row numbers
+  lazy val blockHeight = blocks.toList.map(_._1).sum
 
   lazy val distanceFromPreferredSide = piece.getDistanceFromPreferredSide(positions.head, field.width)
 
