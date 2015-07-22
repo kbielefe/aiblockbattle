@@ -91,3 +91,16 @@ class Piece(string: String, name: Char) {
 
   private def flip(block: Block): Block = (width - block._1 - 1, width - block._2 - 1)
 }
+
+object Piece {
+  val pieces = Map(
+    'I' -> "    XXXX        ",
+    'J' -> "X  XXX   ",
+    'L' -> "  XXXX   ",
+    'O' -> "XXXX",
+    'S' -> " XXXX    ",
+    'T' -> " X XXX   ",
+    'Z' -> "XX  XX   ") map {case (name, string) => (name, new Piece(string, name))}
+
+  def apply(name: Char): Piece = pieces(name)
+}

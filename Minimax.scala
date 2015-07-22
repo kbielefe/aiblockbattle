@@ -1,7 +1,7 @@
 import scala.annotation.tailrec
 
 class Minimax[Move, State, Score] {
-  sealed abstract class Infinite {
+  private abstract class Infinite {
     def max(other: Infinite): Infinite = {
       if (this.lte(other))
         other
@@ -21,15 +21,15 @@ class Minimax[Move, State, Score] {
     def getScore: Score = throw new Exception("No score available")
   }
 
-  object Infinity extends Infinite {
+  private object Infinity extends Infinite {
     def lte(other: Infinite): Boolean = false
   }
 
-  object NegativeInfinity extends Infinite {
+  private object NegativeInfinity extends Infinite {
     def lte(other: Infinite): Boolean = true
   }
 
-  case class Finite(tree: Tree[Move, State, Score]) extends Infinite {
+  private case class Finite(tree: Tree[Move, State, Score]) extends Infinite {
     def lte(other: Infinite): Boolean = other match {
       case Infinity           => true
       case NegativeInfinity   => false
@@ -86,7 +86,7 @@ class Minimax[Move, State, Score] {
     score
   }
 
-  def scoreTree(tree: Tree[Move, State, Score], depth: Int): Infinite = {
+  def scoreTree(tree: Tree[Move, State, Score], depth: Int): Unit = {
     alphabeta(tree, depth, NegativeInfinity, Infinity, true)
   }
 }
