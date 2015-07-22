@@ -39,7 +39,7 @@ case class Metric(
   private val spawnEndCol = spawnStartCol + 3
 
   def loseInX(x: Int): Boolean = {
-    val top = movedField.height - x - 1
+    val top = movedField.height - x
     blocksInRegion(top, 0, top, spawnStartCol-1) ||
       blocksInRegion(top-1, spawnStartCol, top-1, spawnEndCol) ||
       blocksInRegion(top, spawnEndCol+1, top, movedField.width-1)
