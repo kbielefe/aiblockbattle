@@ -94,9 +94,9 @@ case class Metric(
       allNeighbors filter {neighbor => field.moveValid(piece.getBlocksFromPosition(neighbor))}
     }
 
-    val aStar = new AStar(heuristic, getNeighbors(field, piece)_)
+    val fastPath = new FastPath(heuristic, getNeighbors(field, piece)_)
     val goals = positions.toArray.sortBy(position => math.abs(position._2)).iterator
-    val paths = goals map {aStar.getPath(start, _)} dropWhile {_.isEmpty}
+    val paths = goals map {fastPath.getPath(start, _)} dropWhile {_.isEmpty}
     if (paths.hasNext)
       paths.next()
     else
