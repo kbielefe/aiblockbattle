@@ -1,11 +1,6 @@
 import scala.annotation.tailrec
 
-abstract class Minimax[Node, Score] {
-  def lt(left: Score, right: Score): Boolean
-  def terminal(node: Node): Boolean
-  def heuristic(node: Node): Infinite
-  def getChildren(node: Node): List[Node]
-
+class Minimax[Move, State, Score] {
   sealed abstract class Infinite {
     def max(other: Infinite): Infinite = {
       if (this.lte(other))
@@ -23,9 +18,7 @@ abstract class Minimax[Node, Score] {
 
     def lte(other: Infinite): Boolean
 
-    def getScore: Score = {
-      throw new Exception("No result found")
-    }
+    def getScore: Score = throw new Exception("No score available")
   }
 
   object Infinity extends Infinite {
@@ -36,19 +29,23 @@ abstract class Minimax[Node, Score] {
     def lte(other: Infinite): Boolean = true
   }
 
-  case class Finite(score: Score) extends Infinite {
+  case class Finite(tree: Tree[Move, State, Score]) extends Infinite {
     def lte(other: Infinite): Boolean = other match {
       case Infinity           => true
       case NegativeInfinity   => false
-      case Finite(otherScore) => score == otherScore || lt(score, otherScore)
+      case Finite(otherTree) => {
+        val score = tree.getScore
+        val otherScore = otherTree.getScore
+        score == otherScore || tree.scoreLessThan(score, otherScore)
+      }
     }
 
-    override def getScore: Score = score
+    override def getScore: Score = tree.getScore
   }
 
   @tailrec
   private def childLoop(
-    children:   List[Node],
+    children:   Vector[(Move, Tree[Move, State, Score])],
     result:     Infinite,
     alpha:      Infinite,
     beta:       Infinite,
@@ -58,7 +55,9 @@ abstract class Minimax[Node, Score] {
     if (children.isEmpty)
       return result
 
-    val child :: tail = children
+    val (move, child) = children.head
+    val remaining  = children.tail
+
     val childResult = alphabeta(child, depth-1, alpha, beta, !maximizing)
 
     val newResult = if (maximizing) result.max(childResult) else result.min(childResult)
@@ -68,21 +67,26 @@ abstract class Minimax[Node, Score] {
     if (newBeta.lte(newAlpha))
       return newResult
 
-    childLoop(tail, newResult, newAlpha, beta, depth, maximizing)
+    childLoop(remaining, newResult, newAlpha, beta, depth, maximizing)
   }
 
-  private def alphabeta(node: Node, depth: Int, alpha: Infinite, beta: Infinite, maximizing: Boolean): Infinite = {
-    if (depth == 0 || terminal(node))
-      return heuristic(node)
+  private def alphabeta(tree: Tree[Move, State, Score],
+                        depth: Int,
+                        alpha: Infinite,
+                        beta: Infinite,
+                        maximizing: Boolean): Infinite = {
 
-    val children = getChildren(node)
+    if (depth == 0 || tree.leaf)
+      return Finite(tree)
+
     val initialValue = if (maximizing) NegativeInfinity else Infinity
 
-    childLoop(children, initialValue, alpha, beta, depth, maximizing)
+    val score = childLoop(tree.getChildren, initialValue, alpha, beta, depth, maximizing)
+    tree.score = Some(score.getScore)
+    score
   }
 
-  //TODO:  Add a time cutoff
-  def search(node: Node, depth: Int): Score = {
-    alphabeta(node, depth, NegativeInfinity, Infinity, true).getScore
+  def scoreTree(tree: Tree[Move, State, Score], depth: Int): Infinite = {
+    alphabeta(tree, depth, NegativeInfinity, Infinity, true)
   }
 }
