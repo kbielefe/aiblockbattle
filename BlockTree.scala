@@ -1,14 +1,4 @@
 /*
-  val my_bot = state("your_bot")
-  val field = Field(state(my_bot + "/field"))
-  val combo = state(my_bot + "/combo").toInt
-  val this_piece_type = state("game/this_piece_type")(0)
-  val next_piece_type = state("game/next_piece_type")(0)
-  val this_piece_position = state("game/this_piece_position") split ','
-  val piece = pieces(this_piece_type)
-  val next_piece = pieces(next_piece_type)
-  val start = ((field.height - this_piece_position(1).toInt - piece.width, this_piece_position(0).toInt), 0)
-
     val boundaries = state.field.getBoundaries
     val potentialPositions = state.piece.getPositionsFromBoundaries(boundaries).toSet
     val potentialBlocks = potentialPositions map {position => (position, state.piece.getBlocksFromPosition(position))}
@@ -41,9 +31,9 @@ class BlockTree(state: Node, maximizing: Boolean)
   def generateChildren: Vector[Child] = {
     if (maximizing) {
       val moves = state.field.getValidMoves(state.piece)
-      moves map {case (move, field, clearCount) => (move, Node(field, piece, nextPiece, newPoints(clearCount), newCombo(clearCount)))}
+      moves map {case (move, field, clearCount) => (move, new BlockTree(Node(field, state.piece, state.nextPieces, newPoints(clearCount), newCombo(clearCount)), false))}
     } else {
-      state.nextPieces.map((((-1, -1), -1), Node(state.field, _, "IJLOSTZ", state.points, state.combo))).toVector
+      state.nextPieces.map(piece => (((-1, -1), -1), new BlockTree(Node(state.field, piece, "IJLOSTZ", state.points, state.combo), true))).toVector
     }
   }
 }

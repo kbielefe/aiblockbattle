@@ -1,5 +1,6 @@
 class Field(val blocks: Set[(Int, Int)], val width: Int, val height: Int) {
   type Block = (Int, Int)
+  type Position = ((Int, Int), Int)
 
   def empty(block: Block): Boolean = {
     inside(block) && !(blocks contains block)
@@ -50,6 +51,10 @@ class Field(val blocks: Set[(Int, Int)], val width: Int, val height: Int) {
   def getBoundaries: Set[Block] = {
     val bottomBlocks = for (col <- 0 until width) yield (0, col)
     (blocks map above) ++ (bottomBlocks) filter empty
+  }
+
+  def getValidMoves(pieceName: Char): Vector[(Position, Field, Int)] = {
+    Vector.empty[(Position, Field, Int)]
   }
 }
 

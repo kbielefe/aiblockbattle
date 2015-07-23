@@ -15,10 +15,20 @@ object AiBlockBattle {
   }
 
   def outputMove(state: GameState, time: Int): Unit = {
-    val root = new RootNode(state)
-    val metric = BlockMinimax.search(root, 3)
-    //Console.err.println(metric)
-    val path = metric.parentPaths.last
+    val my_bot = state("your_bot")
+    val field = Field(state(my_bot + "/field"))
+    val combo = state(my_bot + "/combo").toInt
+    val points = state(my_bot + "/row_points").toInt
+    val pieceName = state("game/this_piece_type")(0)
+    val nextPiece = state("game/next_piece_type")
+
+    val tree = new BlockTree(Node(field, pieceName, nextPiece, points, combo), true)
+
+    val minimax = new Minimax[Position, Node, Int]()
+    minimax.scoreTree(tree, 1)
+
+    //val start = ((field.height - this_piece_position(1).toInt - piece.width, this_piece_position(0).toInt), 0)
+    val path = List.empty[Position]
 
     if (path.isEmpty)
       println("no_moves")
