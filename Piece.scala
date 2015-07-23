@@ -26,6 +26,15 @@ class Piece(string: String, name: Char) {
     ('Z',  90) -> 0.0,
     ('Z', 180) -> 1.0)
 
+  private val preferredAngles = Map(
+    'I' -> Set(0, 90),
+    'J' -> Set(0, 90, -90, 180),
+    'L' -> Set(0, 90, -90, 180),
+    'O' -> Set(0),
+    'S' -> Set(0, 90),
+    'T' -> Set(0, 90, -90, 180),
+    'Z' -> Set(0, 90))
+
   def getDistanceFromPreferredSide(position: Position, width: Int): Double = {
     val ((row, col), angle) = position
     def distance(side: Double): Double = math.abs(col.toDouble - width.toDouble * side)
@@ -57,14 +66,14 @@ class Piece(string: String, name: Char) {
     indexSeq.toSet
   }
 
-  def getPositionsFromBoundaries(boundaries: Iterable[Block]): Iterable[Position] = {
+  def getPositionsFromBoundaries(boundaries: Set[Block]): Set[Position] = {
     boundaries flatMap getPositionsFromBoundary
   }
 
+  private lazy val offsets = preferredAngles(name) flatMap getBoundariesFromAngle
+
   def getPositionsFromBoundary(boundary: Block): Set[Position] = {
-    val angles = Set(0, -90, 90, 180)
-    val offset = angles flatMap getBoundariesFromAngle
-    offset map {case ((row, col), angle) => ((boundary._1 - row, boundary._2 - col), angle)}
+    offsets map {case ((row, col), angle) => ((boundary._1 - row, boundary._2 - col), angle)}
   }
 
   def getBlocksFromAngle(angle: Int): Set[Block] = angle match {
