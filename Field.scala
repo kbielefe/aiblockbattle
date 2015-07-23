@@ -53,13 +53,42 @@ class Field(val blocks: Set[(Int, Int)], val width: Int, val height: Int) {
     (blocks map above) ++ (bottomBlocks) filter empty
   }
 
+  private def heuristic(start: Position, goal: Position): Double = {
+    import math._
+
+    val ((startX, startY), startAngle) = start
+    val ((goalX, goalY), goalAngle) = goal
+    val angleDiff = abs(AiBlockBattle.normalizeAngle(goalAngle - startAngle)) / 90
+    val diffX = (goalX - startX).toDouble
+    val diffY = (goalY - startY).toDouble
+
+    diffX * diffX + diffY * diffY + angleDiff.toDouble
+  }
+
+  private def getNeighbors(piece: Piece)(position: Position): Set[Position] = {
+    val ((row, col), angle) = position
+    // Starts at bottom and moves up, because that will find unreachable positions the quickest
+    Set(((row+1, col), angle),
+        ((row, col-1), angle),
+        ((row, col+1), angle),
+        ((row, col), AiBlockBattle.normalizeAngle(angle - 90)),
+        ((row, col), AiBlockBattle.normalizeAngle(angle + 90)))
+  }
+
+  private def reachableValid(piece: Piece)(position: Position): Boolean = {
+    moveValid(piece.getBlocksFromPosition(position))
+  }
+
   def getValidMoves(pieceName: Char): Vector[(Position, Field, Int)] = {
     val boundaries = getBoundaries
     val piece = Piece(pieceName)
+
+    val reachable = new FastReachable(heuristic, getNeighbors(piece)_, reachableValid(piece)_)
+    val goal = piece.getExpectedSpawnPosition(this)
+
     val potentialPositions = piece.getPositionsFromBoundaries(boundaries)
-    val potentialMoves = potentialPositions map {position => (position, piece.getBlocksFromPosition(position))}
-    val validMoves = potentialMoves filter {move => moveValid(move._2)}
-    val combined = validMoves map {case (position, blocks) => val (field, cleared) = this + blocks; (position, field, cleared)}
+    val validPositions = potentialPositions filter {position => reachable.reachable(position, goal)}
+    val combined = validPositions map {position => val (field, cleared) = this + piece.getBlocksFromPosition(position); (position, field, cleared)}
     combined.toVector
   }
 }
