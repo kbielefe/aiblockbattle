@@ -1,11 +1,3 @@
-/*
-    val boundaries = state.field.getBoundaries
-    val potentialPositions = state.piece.getPositionsFromBoundaries(boundaries).toSet
-    val potentialBlocks = potentialPositions map {position => (position, state.piece.getBlocksFromPosition(position))}
-    val groupedBlocks = potentialBlocks groupBy {_._2} mapValues {_ map {_._1}}
-    val validMoves = groupedBlocks filter {block => state.field.moveValid(block._1)}
-*/
-
 case class Node(field: Field, piece: Char, nextPieces: String, points: Int, combo: Int)
 
 class BlockTree(state: Node, maximizing: Boolean)

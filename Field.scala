@@ -54,6 +54,12 @@ class Field(val blocks: Set[(Int, Int)], val width: Int, val height: Int) {
   }
 
   def getValidMoves(pieceName: Char): Vector[(Position, Field, Int)] = {
+    val boundaries = getBoundaries
+    val piece = Piece(pieceName)
+    val potentialPositions = piece.getPositionsFromBoundaries(boundaries).toSet
+    val potentialBlocks = potentialPositions map {position => (position, piece.getBlocksFromPosition(position))}
+    val groupedBlocks = potentialBlocks groupBy {_._2} mapValues {_ map {_._1}}
+    val validMoves = groupedBlocks filter {block => moveValid(block._1)}
     Vector.empty[(Position, Field, Int)]
   }
 }
