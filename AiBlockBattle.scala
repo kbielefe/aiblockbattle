@@ -14,6 +14,29 @@ object AiBlockBattle {
     }
   }
 
+  def heuristic(start: Position, goal: Position): Double = {
+    import math._
+
+    val ((startX, startY), startAngle) = start
+    val ((goalX, goalY), goalAngle) = goal
+    val angleDiff = abs(normalizeAngle(goalAngle - startAngle)) / 90
+    val diffX = (goalX - startX).toDouble
+    val diffY = (goalY - startY).toDouble
+
+    diffX * diffX + diffY * diffY + angleDiff.toDouble
+  }
+
+  def getNeighbors(field: Field, piece: Piece)(position: Position): Set[Position] = {
+    val ((row, col), angle) = position
+    val allNeighbors = Set(((row-1, col), angle),
+      ((row, col-1), angle),
+      ((row, col+1), angle),
+      ((row, col), normalizeAngle(angle - 90)),
+      ((row, col), normalizeAngle(angle + 90)))
+
+    allNeighbors filter {neighbor => field.moveValid(piece.getBlocksFromPosition(neighbor))}
+  }
+
   def outputMove(state: GameState, time: Int): Unit = {
     val my_bot = state("your_bot")
     val field = Field(state(my_bot + "/field"))
@@ -21,14 +44,18 @@ object AiBlockBattle {
     val points = state(my_bot + "/row_points").toInt
     val pieceName = state("game/this_piece_type")(0)
     val nextPiece = state("game/next_piece_type")
+    val piece = Piece(pieceName)
+    val this_piece_position = state("game/this_piece_position") split ","
 
-    val tree = new BlockTree(Node(field, pieceName, nextPiece, points, combo), true)
+    val start = ((field.height - this_piece_position(1).toInt - piece.width, this_piece_position(0).toInt), 0)
 
-    val minimax = new Minimax[Position, Node, Int]()
-    minimax.scoreTree(tree, 1)
+    val tree = new BlockTree(Node(field, ((-1, -1), -1), pieceName, nextPiece, points, combo), true)
 
-    //val start = ((field.height - this_piece_position(1).toInt - piece.width, this_piece_position(0).toInt), 0)
-    val path = List.empty[Position]
+    val minimax = new Minimax[Position, Node, Metric]()
+    val metric = minimax.scoreTree(tree, 1)
+
+    val fastPath = new FastPath(heuristic, getNeighbors(field, piece)_)
+    val path = fastPath.getPath(start, metric.position)
 
     if (path.isEmpty)
       println("no_moves")
