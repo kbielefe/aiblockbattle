@@ -86,7 +86,8 @@ class Minimax[Move, State, Score] {
     score
   }
 
-  def scoreTree(tree: Tree[Move, State, Score], depth: Int): Score = {
-    alphabeta(tree, depth, NegativeInfinity, Infinity, true).getScore
+  def run(tree: Tree[Move, State, Score], depth: Int): Move = {
+    alphabeta(tree, depth, NegativeInfinity, Infinity, true)
+    tree.getChildren.head._1
   }
 }

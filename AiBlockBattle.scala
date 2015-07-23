@@ -52,10 +52,10 @@ object AiBlockBattle {
     val tree = new BlockTree(Node(field, ((-1, -1), -1), pieceName, nextPiece, points, combo), true)
 
     val minimax = new Minimax[Position, Node, Metric]()
-    val metric = minimax.scoreTree(tree, 1)
+    val move = minimax.run(tree, 1)
 
     val fastPath = new FastPath(heuristic, getNeighbors(field, piece)_)
-    val path = fastPath.getPath(start, metric.position)
+    val path = fastPath.getPath(start, move)
 
     if (path.isEmpty)
       println("no_moves")
