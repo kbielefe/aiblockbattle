@@ -19,6 +19,7 @@ class Minimax[Move, State, Score] {
     def lte(other: Infinite): Boolean
 
     def getScore: Score = throw new Exception("No score available")
+    def hasScore: Boolean = false
   }
 
   private object Infinity extends Infinite {
@@ -41,6 +42,7 @@ class Minimax[Move, State, Score] {
     }
 
     override def getScore: Score = tree.getScore
+    override def hasScore: Boolean = true
   }
 
   @tailrec
@@ -50,15 +52,16 @@ class Minimax[Move, State, Score] {
     alpha:      Infinite,
     beta:       Infinite,
     depth:      Int,
-    maximizing: Boolean): Infinite = {
+    maximizing: Boolean,
+    deadline:   Long): Infinite = {
 
-    if (children.isEmpty)
+    if (children.isEmpty || System.currentTimeMillis() >= deadline)
       return result
 
     val (move, child) = children.head
     val remaining  = children.tail
 
-    val childResult = alphabeta(child, depth-1, alpha, beta, !maximizing)
+    val childResult = alphabeta(child, depth-1, alpha, beta, !maximizing, deadline)
 
     val newResult = if (maximizing) result.max(childResult) else result.min(childResult)
     val newAlpha  = if (maximizing) alpha.max(newResult)    else alpha
@@ -67,27 +70,29 @@ class Minimax[Move, State, Score] {
     if (newBeta.lte(newAlpha))
       return newResult
 
-    childLoop(remaining, newResult, newAlpha, beta, depth, maximizing)
+    childLoop(remaining, newResult, newAlpha, beta, depth, maximizing, deadline)
   }
 
   private def alphabeta(tree: Tree[Move, State, Score],
                         depth: Int,
                         alpha: Infinite,
                         beta: Infinite,
-                        maximizing: Boolean): Infinite = {
+                        maximizing: Boolean,
+                        deadline: Long): Infinite = {
 
     if (depth == 0 || tree.leaf)
       return Finite(tree)
 
     val initialValue = if (maximizing) NegativeInfinity else Infinity
 
-    val score = childLoop(tree.getChildren, initialValue, alpha, beta, depth, maximizing)
-    tree.score = Some(score.getScore)
+    val score = childLoop(tree.getChildren, initialValue, alpha, beta, depth, maximizing, deadline)
+    if (score.hasScore)
+      tree.score = Some(score.getScore)
     score
   }
 
-  def run(tree: Tree[Move, State, Score], depth: Int): Move = {
-    alphabeta(tree, depth, NegativeInfinity, Infinity, true)
+  def run(tree: Tree[Move, State, Score], depth: Int, time: Long): Move = {
+    alphabeta(tree, depth, NegativeInfinity, Infinity, true, System.currentTimeMillis() + time)
     tree.getChildren.head._1
   }
 }

@@ -38,6 +38,7 @@ object AiBlockBattle {
   }
 
   def outputMove(state: GameState, time: Int): Unit = {
+    val time = System.currentTimeMillis()
     val my_bot = state("your_bot")
     val field = Field(state(my_bot + "/field"))
     val combo = state(my_bot + "/combo").toInt
@@ -52,7 +53,8 @@ object AiBlockBattle {
     val tree = new BlockTree(Node(field, ((-1, -1), -1), pieceName, nextPiece, points, combo), true)
 
     val minimax = new Minimax[Position, Node, Metric]()
-    val move = minimax.run(tree, 1)
+    minimax.run(tree, 1, 1000)
+    val move = minimax.run(tree, 3, 470 - (System.currentTimeMillis() - time))
 
     val fastPath = new FastPath(heuristic, getNeighbors(field, piece)_)
     val path = fastPath.getPath(start, move)
@@ -62,6 +64,7 @@ object AiBlockBattle {
     else {
       println(pathToMoves(path).mkString(","))
     }
+    Console.err.println(System.currentTimeMillis()-time)
   }
 
   def normalizeAngle(angle: Int): Int = {
