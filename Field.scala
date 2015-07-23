@@ -8,7 +8,7 @@ class Field(val blocks: Set[(Int, Int)], val width: Int, val height: Int) {
 
   def inside(block: Block): Boolean = {
     val (row, col) = block
-    row >= 0 && col >= 0 && col < width
+    row >= 0 && row < height + 3 && col >= 0 && col < width
   }
 
   def moveValid(move: Set[Block]): Boolean = {
