@@ -58,4 +58,17 @@ abstract class Tree[Move, State, Score](val state: State, val maximizing: Boolea
       score = Some(generateScore)
     score.get
   }
+
+  private def indentedToString(indent: Int): Vector[String] = {
+    val childStrings = children flatMap {_._2.indentedToString(indent + 2)}
+    val spaces = " " * indent
+    if (score.isDefined)
+      Vector(spaces + state, spaces + score.get) ++ childStrings
+    else
+      Vector(spaces + state) ++ childStrings
+  }
+
+  override def toString: String = {
+    indentedToString(0).mkString("\n")
+  }
 }
