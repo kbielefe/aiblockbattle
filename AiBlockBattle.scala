@@ -70,22 +70,27 @@ object AiBlockBattle {
     GameState(state.map, tree.getChildren.head._2.getChildren.head._2, depth, false)
   }
 
+  def nextPiecePrune(piece: Char, round: Int)(node: (Position, Tree[Position, Node, Metric])): Boolean = {
+    val state = node._2.state
+    !(state.round == round + 1 && state.piece != piece)
+  }
+
   def outputMove(state: GameState, time: Long): GameState = {
     val startTime = System.currentTimeMillis()
     val my_bot = state.map("your_bot")
     val field = Field(state.map(my_bot + "/field"))
+    val round = state.map("game/round").toInt
     val pieceName = state.map("game/this_piece_type")(0)
-    val nextPiece = state.map("game/next_piece_type")
+    val nextPiece = state.map("game/next_piece_type")(0)
     val piece = Piece(pieceName)
     val this_piece_position = state.map("game/this_piece_position") split ","
     val start = ((field.height - this_piece_position(1).toInt - piece.width, this_piece_position(0).toInt), 0)
 
     val tree = state.tree
-    // update for known next piece
+    tree.prune(nextPiecePrune(nextPiece, round)_)
     // update for height
 
     val (move, depth) = iterativeDeepening(tree, math.max(1, state.depth - 2), startTime + 470)
-    Console.err.println(tree)
 
     val fastPath = new FastPath(heuristic, getNeighbors(field, piece)_)
     val path = fastPath.getPath(start, move)
@@ -96,6 +101,7 @@ object AiBlockBattle {
       println(pathToMoves(path).mkString(","))
     }
     Console.err.println(depth)
+    //Console.err.println(System.currentTimeMillis() - startTime)
     GameState(state.map, tree.getChildren.head._2.getChildren.head._2, depth, false)
   }
 

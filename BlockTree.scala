@@ -33,9 +33,9 @@ class BlockTree(state: Node, maximizing: Boolean)
   def generateChildren: Vector[Child] = {
     if (maximizing) {
       val moves = state.field.getValidMoves(state.piece)
-      moves map {case (move, field, clearCount) => (move, new BlockTree(Node(state.round + 1, field, move, state.piece, state.nextPieces, newPoints(clearCount), newCombo(clearCount)), false))}
+      moves map {case (move, field, clearCount) => (move, new BlockTree(Node(state.round, field, move, state.piece, state.nextPieces, newPoints(clearCount), newCombo(clearCount)), false))}
     } else {
-      state.nextPieces.map(piece => (((-1, -1), -1), new BlockTree(Node(state.round, state.field, ((-1, -1), -1), piece, "IJLOSTZ", state.points, state.combo), true))).toVector
+      state.nextPieces.map(piece => (((-1, -1), -1), new BlockTree(Node(state.round + 1, state.field, ((-1, -1), -1), piece, "SZOJLTI", state.points, state.combo), true))).toVector
     }
   }
 }

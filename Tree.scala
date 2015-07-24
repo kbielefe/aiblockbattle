@@ -71,4 +71,9 @@ abstract class Tree[Move, State, Score](val state: State, val maximizing: Boolea
   override def toString: String = {
     indentedToString(0).mkString("\n")
   }
+
+  def prune(f: Child => Boolean): Unit = {
+    children = children filter f
+    children map {_._2.prune(f)}
+  }
 }

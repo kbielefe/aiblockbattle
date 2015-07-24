@@ -5,7 +5,7 @@ settings your_bot player1
 settings field_height 20
 settings field_width 10
 
-update game round 74
+update game round 1
 update game this_piece_type L
 update game next_piece_type J
 update game this_piece_position 3,-1
@@ -17,6 +17,7 @@ update player2 row_points 39
 update player2 combo 0
 action moves 10000
 
+update game round 2
 update game this_piece_type J
 update game next_piece_type Z
 update player2 row_points 40
