@@ -1,4 +1,4 @@
-case class GameState(map: Map[String, String], tree: Tree[((Int, Int), Int), Node, Metric], depth: Int)
+case class GameState(map: Map[String, String], tree: Tree[((Int, Int), Int), Node, Metric], depth: Int, first: Boolean)
 
 object AiBlockBattle {
   import scala.annotation.tailrec
@@ -9,9 +9,9 @@ object AiBlockBattle {
     val fields = line split ' '
 
     fields(0) match {
-      case "settings" => GameState(state.map + (fields(1) -> fields(2)), state.tree, state.depth)
-      case "update"   => GameState(state.map + (fields(1) + "/" + fields(2) -> fields(3)), state.tree, state.depth)
-      case "action"   => outputMove(state, fields(2).toLong)
+      case "settings" => GameState(state.map + (fields(1) -> fields(2)), state.tree, state.depth, state.first)
+      case "update"   => GameState(state.map + (fields(1) + "/" + fields(2) -> fields(3)), state.tree, state.depth, state.first)
+      case "action"   => if (state.first) outputFirstMove(state, fields(2).toLong) else outputMove(state, fields(2).toLong)
       case _          => state
     }
   }
@@ -41,7 +41,7 @@ object AiBlockBattle {
 
   val minimax = new Minimax[Position, Node, Metric]()
 
-  def outputMove(state: GameState, time: Long): GameState = {
+  def outputFirstMove(state: GameState, time: Long): GameState = {
     val startTime = System.currentTimeMillis()
     val my_bot = state.map("your_bot")
     val field = Field(state.map(my_bot + "/field"))
@@ -67,11 +67,42 @@ object AiBlockBattle {
       println(pathToMoves(path).mkString(","))
     }
     Console.err.println(depth)
-    GameState(state.map, tree.getChildren.head._2, depth)
+    GameState(state.map, tree.getChildren.head._2.getChildren.head._2, depth, false)
+  }
+
+  def outputMove(state: GameState, time: Long): GameState = {
+    val startTime = System.currentTimeMillis()
+    val my_bot = state.map("your_bot")
+    val field = Field(state.map(my_bot + "/field"))
+    val combo = state.map(my_bot + "/combo").toInt
+    val points = state.map(my_bot + "/row_points").toInt
+    val pieceName = state.map("game/this_piece_type")(0)
+    val nextPiece = state.map("game/next_piece_type")
+    val piece = Piece(pieceName)
+    val this_piece_position = state.map("game/this_piece_position") split ","
+
+    val start = ((field.height - this_piece_position(1).toInt - piece.width, this_piece_position(0).toInt), 0)
+
+    val tree = state.tree
+    // update for known next piece
+    // update for height
+
+    val (move, depth) = iterativeDeepening(tree, math.max(1, state.depth - 2), startTime + 470)
+
+    val fastPath = new FastPath(heuristic, getNeighbors(field, piece)_)
+    val path = fastPath.getPath(start, move)
+
+    if (path.isEmpty)
+      println("no_moves")
+    else {
+      println(pathToMoves(path).mkString(","))
+    }
+    Console.err.println(depth)
+    GameState(state.map, tree.getChildren.head._2.getChildren.head._2, depth, false)
   }
 
   @tailrec
-  def iterativeDeepening(tree: BlockTree, depth: Int, deadline: Long): (Position, Int) = {
+  def iterativeDeepening(tree: Tree[Position, Node, Metric], depth: Int, deadline: Long): (Position, Int) = {
     val move = minimax.run(tree, depth, deadline)
     if (System.currentTimeMillis() > deadline)
       (move, depth)
@@ -117,7 +148,10 @@ object AiBlockBattle {
 
   def main(args: Array[String]) {
     val lines = io.Source.stdin.getLines
-    val field = new Field(Set.empty[(Int, Int)], 0, 0)
-    val state = lines.foldLeft(GameState(Map.empty[String, String], new BlockTree(Node(1, field, ((-1, -1), -1), 'I', "", 0, 0), true), 1))(processLine)
+    val initialField = new Field(Set.empty[(Int, Int)], 0, 0)
+    val initialTree = new BlockTree(Node(1, initialField, ((-1, -1), -1), 'I', "", 0, 0), true)
+    val initialGameState = GameState(Map.empty[String, String], initialTree, 1, true)
+
+    val state = lines.foldLeft(initialGameState)(processLine)
   }
 }
