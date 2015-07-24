@@ -50,7 +50,7 @@ object AiBlockBattle {
 
     val start = ((field.height - this_piece_position(1).toInt - piece.width, this_piece_position(0).toInt), 0)
 
-    val tree = new BlockTree(Node(field, ((-1, -1), -1), pieceName, nextPiece, points, combo), true)
+    val tree = new BlockTree(Node(1, field, ((-1, -1), -1), pieceName, nextPiece, points, combo), true)
 
     val minimax = new Minimax[Position, Node, Metric]()
     minimax.run(tree, 1, 1000)

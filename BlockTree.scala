@@ -1,4 +1,12 @@
-case class Node(field: Field, position: ((Int, Int), Int), piece: Char, nextPieces: String, points: Int, combo: Int)
+case class Node(round: Int, field: Field, position: ((Int, Int), Int), piece: Char, nextPieces: String, points: Int, combo: Int) {
+  lazy val leaf: Boolean = {
+    val spawnStartCol = (field.width - 4) / 2
+    val spawnEndCol = spawnStartCol + 3
+    val top = field.height - 1
+    val blocks = Piece(piece).getBlocksFromPosition(position)
+    blocks exists {case (row, col) => row > top || (row == top && col >= spawnStartCol && col <= spawnEndCol)}
+  }
+}
 
 class BlockTree(state: Node, maximizing: Boolean)
       extends Tree[((Int, Int), Int), Node, Metric](state, maximizing) {
@@ -9,9 +17,9 @@ class BlockTree(state: Node, maximizing: Boolean)
   }
 
   def scoreLessThan(left: Metric, right: Metric): Boolean = left < right
-  def leaf: Boolean = false
+  def leaf: Boolean = state.leaf
   def generateScore: Metric = {
-    Metric(state.position, state.field, Piece(state.piece), state.points, state.combo)
+    Metric(state.position, state.field, Piece(state.piece), state.points, state.combo, state.round)
   }
 
   private def newPoints(clearCount: Int): Int = {
@@ -25,9 +33,9 @@ class BlockTree(state: Node, maximizing: Boolean)
   def generateChildren: Vector[Child] = {
     if (maximizing) {
       val moves = state.field.getValidMoves(state.piece)
-      moves map {case (move, field, clearCount) => (move, new BlockTree(Node(field, move, state.piece, state.nextPieces, newPoints(clearCount), newCombo(clearCount)), false))}
+      moves map {case (move, field, clearCount) => (move, new BlockTree(Node(state.round + 1, field, move, state.piece, state.nextPieces, newPoints(clearCount), newCombo(clearCount)), false))}
     } else {
-      state.nextPieces.map(piece => (((-1, -1), -1), new BlockTree(Node(state.field, ((-1, -1), -1), piece, "IJLOSTZ", state.points, state.combo), true))).toVector
+      state.nextPieces.map(piece => (((-1, -1), -1), new BlockTree(Node(state.round, state.field, ((-1, -1), -1), piece, "IJLOSTZ", state.points, state.combo), true))).toVector
     }
   }
 }

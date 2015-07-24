@@ -3,14 +3,15 @@ case class Metric(
   field: Field,
   piece: Piece,
   points: Int,
-  combo: Int) {
+  combo: Int,
+  round: Int) {
 
   type Block = (Int, Int)
   type Position = (Block, Int) // Origin, angle
 
   override
   def toString: String = {
-    blockHeight + " " + holeCount + " " + lostGame + " " + chimneyCount + " " + holeDepth + " " + position
+    blockHeight + " " + holeCount + " " + lostInRound + " " + chimneyCount + " " + holeDepth + " " + position
   }
 
   private def blocksInRegion(top: Int, left: Int, bottom: Int, right: Int): Boolean = {
@@ -58,10 +59,11 @@ case class Metric(
 
   lazy val holeCount = holes.size
 
-  lazy val lostGame: Boolean = {
+  lazy val lostInRound: Int = {
     val top = field.height - 1
-    blocksInRegion(top+4, 0, top+1, field.width - 1) ||
+    val lost = blocksInRegion(top+4, 0, top+1, field.width - 1) ||
     blocksInRegion(top, spawnStartCol, top, spawnEndCol)
+    if (lost) round else 1000
   }
 
 
@@ -75,7 +77,7 @@ case class Metric(
     }
 
     val priorities: Seq[Metric => Int] = Seq(
-      boolField(_.lostGame),
+      largerIsBetter(_.lostInRound),
       boolField(_.loseInX(1)),
       largerIsBetter(_.points),
       boolField(_.loseInX(2)),
