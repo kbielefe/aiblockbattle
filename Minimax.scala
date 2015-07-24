@@ -91,8 +91,8 @@ class Minimax[Move, State, Score] {
     score
   }
 
-  def run(tree: Tree[Move, State, Score], depth: Int, time: Long): Move = {
-    alphabeta(tree, depth, NegativeInfinity, Infinity, true, System.currentTimeMillis() + time)
+  def run(tree: Tree[Move, State, Score], depth: Int, deadline: Long): Move = {
+    alphabeta(tree, depth, NegativeInfinity, Infinity, true, deadline)
     tree.getChildren.head._1
   }
 }

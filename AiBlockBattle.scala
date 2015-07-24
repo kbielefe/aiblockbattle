@@ -1,4 +1,5 @@
 object AiBlockBattle {
+  import scala.annotation.tailrec
   type GameState = Map[String, String]
   type Block = (Int, Int)
   type Position = (Block, Int) // Origin, angle
@@ -9,7 +10,7 @@ object AiBlockBattle {
     fields(0) match {
       case "settings" => state + (fields(1) -> fields(2))
       case "update"   => state + (fields(1) + "/" + fields(2) -> fields(3))
-      case "action"   => outputMove(state, fields(2).toInt); state
+      case "action"   => outputMove(state, fields(2).toLong); state
       case _          => state
     }
   }
@@ -37,8 +38,10 @@ object AiBlockBattle {
     allNeighbors filter {neighbor => field.moveValid(piece.getBlocksFromPosition(neighbor))}
   }
 
-  def outputMove(state: GameState, time: Int): Unit = {
-    val time = System.currentTimeMillis()
+  val minimax = new Minimax[Position, Node, Metric]()
+
+  def outputMove(state: GameState, time: Long): Unit = {
+    val startTime = System.currentTimeMillis()
     val my_bot = state("your_bot")
     val field = Field(state(my_bot + "/field"))
     val combo = state(my_bot + "/combo").toInt
@@ -52,9 +55,7 @@ object AiBlockBattle {
 
     val tree = new BlockTree(Node(1, field, ((-1, -1), -1), pieceName, nextPiece, points, combo), true)
 
-    val minimax = new Minimax[Position, Node, Metric]()
-    minimax.run(tree, 1, 1000)
-    val move = minimax.run(tree, 3, 470 - (System.currentTimeMillis() - time))
+    val (move, depth) = iterativeDeepening(tree, 1, startTime + 470)
 
     val fastPath = new FastPath(heuristic, getNeighbors(field, piece)_)
     val path = fastPath.getPath(start, move)
@@ -64,7 +65,16 @@ object AiBlockBattle {
     else {
       println(pathToMoves(path).mkString(","))
     }
-    Console.err.println(System.currentTimeMillis()-time)
+    Console.err.println(depth)
+  }
+
+  @tailrec
+  def iterativeDeepening(tree: BlockTree, depth: Int, deadline: Long): (Position, Int) = {
+    val move = minimax.run(tree, depth, deadline)
+    if (System.currentTimeMillis() > deadline)
+      (move, depth)
+    else
+      iterativeDeepening(tree, depth + 2, deadline)
   }
 
   def normalizeAngle(angle: Int): Int = {
