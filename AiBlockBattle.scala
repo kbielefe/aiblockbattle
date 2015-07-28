@@ -106,12 +106,16 @@ object AiBlockBattle {
   }
 
   @tailrec
-  def iterativeDeepening(tree: Tree[Position, Node, Metric], depth: Int, deadline: Long): (Position, Int) = {
+  def iterativeDeepening(tree: Tree[Position, Node, Metric], depth: Int, deadline: Long, completedMove: Position = ((-1, -1), -1)): (Position, Int) = {
     val move = minimax.run(tree, depth, deadline)
-    if (System.currentTimeMillis() > deadline)
-      (move, depth)
-    else
-      iterativeDeepening(tree, depth + 2, deadline)
+    if (System.currentTimeMillis() > deadline) {
+      if (depth >= 5)
+        (completedMove, depth)
+      else
+        (move, depth)
+    } else {
+      iterativeDeepening(tree, depth + 2, deadline, move)
+    }
   }
 
   def normalizeAngle(angle: Int): Int = {
