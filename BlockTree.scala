@@ -23,7 +23,15 @@ class BlockTree(state: Node, maximizing: Boolean)
   }
 
   private def newPoints(clearCount: Int): Int = {
-    state.points + (if (clearCount == 4) 8 else clearCount) + (if (clearCount > 0) state.combo else 0)
+    val comboPoints = if (clearCount > 0) state.combo else 0
+    val clearPoints = clearCount match {
+      case 1 => 1
+      case 2 => 3
+      case 3 => 6
+      case 4 => 12
+    }
+    // TODO:  T-spins and perfect clears
+    state.points + comboPoints + clearPoints
   }
 
   private def newCombo(clearCount: Int): Int = {

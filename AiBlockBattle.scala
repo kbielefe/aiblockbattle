@@ -81,14 +81,17 @@ object AiBlockBattle {
     val field = Field(state.map(my_bot + "/field"))
     val round = state.map("game/round").toInt
     val pieceName = state.map("game/this_piece_type")(0)
-    val nextPiece = state.map("game/next_piece_type")(0)
+    //val nextPiece = state.map("game/next_piece_type")(0)
+    val nextPiece = state.map("game/next_piece_type")
     val piece = Piece(pieceName)
     val this_piece_position = state.map("game/this_piece_position") split ","
     val start = ((field.height - this_piece_position(1).toInt - piece.width, this_piece_position(0).toInt), 0)
+    val combo = state.map(my_bot + "/combo").toInt
 
-    val tree = state.tree
-    tree.prune(nextPiecePrune(nextPiece, round)_)
+    //val tree = state.tree
+    //tree.prune(nextPiecePrune(nextPiece, round)_)
     // update for height
+    val tree = new BlockTree(Node(1, field, ((-1, -1), -1), pieceName, nextPiece, 0, combo), true)
 
     val (move, depth) = iterativeDeepening(tree, math.max(1, state.depth - 2), startTime + 470)
 
