@@ -11,7 +11,8 @@ object AiBlockBattle {
     fields(0) match {
       case "settings" => GameState(state.map + (fields(1) -> fields(2)), state.tree, state.depth, state.first)
       case "update"   => GameState(state.map + (fields(1) + "/" + fields(2) -> fields(3)), state.tree, state.depth, state.first)
-      case "action"   => if (state.first) outputFirstMove(state, fields(2).toLong) else outputMove(state, fields(2).toLong)
+      //case "action"   => if (state.first) outputFirstMove(state, fields(2).toLong) else outputMove(state, fields(2).toLong)
+      case "action"   => outputFirstMove(state, fields(2).toLong)
       case _          => state
     }
   }
